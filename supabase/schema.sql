@@ -1,31 +1,39 @@
 -- Bench Adoption Program — schema
--- Run once in the Supabase SQL editor (or: psql "$DATABASE_URL" -f supabase/schema.sql)
+-- Run in the Supabase SQL editor (or: psql "$DATABASE_URL" -f supabase/schema.sql).
+-- Re-runnable: drops everything first.
+drop function if exists adopt_bench(text, text, text, text);
+drop view if exists area_summary;
+drop view if exists bench_sides;
+drop table if exists adoptions;
+drop table if exists benches;
+drop table if exists areas;
 
 -- ---------------------------------------------------------------------------
--- Areas: the navigation layer. A person picks an area on the map, then a
--- bench inside it. Coordinates are approximate centroids for the map marker.
+-- Areas: how the park is divided for navigation. A person picks an area,
+-- then a bench inside it. Area outlines live with the map (src/lib/park.ts).
 -- ---------------------------------------------------------------------------
 create table areas (
-  id          text primary key,            -- slug, e.g. 'parade-ground'
+  id          text primary key,            -- slug, e.g. 'great-lawn'
   name        text not null,
   description text not null default '',
-  lat         double precision not null,
-  lng         double precision not null,
   sort_order  int not null default 0
 );
 
 -- ---------------------------------------------------------------------------
--- Benches: the physical unit. `installed = false` marks a pre-approved slot on
--- the Parade Ground perimeter where a new bench may be installed and adopted.
--- Slots are rows, not a "click anywhere" handler, because VCPA controls where
--- new benches may go.
+-- Benches: the physical unit, with its position. The park has been mapped,
+-- so every bench has coordinates (park-local metres here; lat/lng for a real
+-- survey). `installed = false` marks a pre-approved slot where a new bench
+-- may be installed and adopted. Slots are rows, not a "click anywhere"
+-- handler, because the park decides where new benches may go.
 -- ---------------------------------------------------------------------------
 create table benches (
-  id        text primary key,              -- inventory tag, e.g. 'VC-0214'
+  id        text primary key,              -- inventory tag, e.g. 'RB-0214'
   area_id   text not null references areas (id),
   style     text not null check (style in ('worlds_fair', 'concrete')),
   size_ft   int  not null check (size_ft in (4, 8)),
-  installed boolean not null default true
+  installed boolean not null default true,
+  pos_x     double precision not null,
+  pos_y     double precision not null
 );
 
 create index benches_area_idx on benches (area_id);
@@ -67,7 +75,7 @@ create unique index one_active_adoption_per_side
 -- A lapsed term reads as 'open'; the stale row is flipped to 'expired' by
 -- adopt_bench() the next time someone adopts that side.
 -- A slot (installed = false) exposes only side A: the install donor takes it,
--- and side B becomes adoptable once VCPA installs the bench and flips the flag.
+-- and side B becomes adoptable once the park installs the bench and flips the flag.
 -- ---------------------------------------------------------------------------
 create view bench_sides as
 select
@@ -76,6 +84,8 @@ select
   b.style,
   b.size_ft,
   b.installed,
+  b.pos_x,
+  b.pos_y,
   s.side,
   a.id        as adoption_id,
   a.kind,
@@ -101,7 +111,7 @@ where s.side = 'A' or (b.size_ft = 8 and b.installed);
 -- ---------------------------------------------------------------------------
 create view area_summary as
 select
-  ar.id, ar.name, ar.description, ar.lat, ar.lng, ar.sort_order,
+  ar.id, ar.name, ar.description, ar.sort_order,
   count(distinct bs.bench_id) filter (where bs.installed)                          as benches_total,
   count(*)                    filter (where bs.installed)                          as sides_total,
   count(*)                    filter (where bs.installed and bs.side_status = 'open') as sides_open,

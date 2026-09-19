@@ -8,8 +8,6 @@ export type AreaSummary = {
   id: string;
   name: string;
   description: string;
-  lat: number;
-  lng: number;
   sort_order: number;
   benches_total: number;
   sides_total: number;
@@ -24,6 +22,8 @@ export type BenchSide = {
   style: BenchStyle;
   size_ft: 4 | 8;
   installed: boolean;
+  pos_x: number;
+  pos_y: number;
   side: Side;
   side_status: SideStatus;
   adoption_id: string | null;
@@ -45,6 +45,8 @@ export type Bench = {
   style: BenchStyle;
   size_ft: 4 | 8;
   installed: boolean;
+  pos_x: number;
+  pos_y: number;
   sides: BenchSide[];
   status: BenchStatus;
 };

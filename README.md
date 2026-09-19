@@ -1,31 +1,36 @@
-# Adopt a Bench — Van Cortlandt Park
+# Adopt a Bench — Riverbend Park
 
-A single source of truth for the Van Cortlandt Park bench adoption program:
-see which benches are adopted, by whom and until when, and adopt one yourself.
+A single source of truth for a park bench adoption program: see which of the
+park's 500+ benches are adopted, by whom and until when, and adopt one
+yourself. Riverbend Park is fictional — the brief simulates the service for a
+park whose benches have all been mapped, so every bench has a position.
 
 **Live:** _(URL goes here)_
 
 ## What it does
 
-- **Map → area → bench.** The home page shows the park with one marker per
-  area, coloured by how many bench sides are still open. Clicking an area lists
-  its benches: blue = open, dashed = one of two sides open, grey = adopted.
+- **Every bench on the map.** The home page is a schematic map of the park
+  with all 532 benches as pins: blue = open, hollow = one of two sides open,
+  grey = adopted, dashed = a spot where a new bench can be installed. Hover
+  for donor and status, click to open. Areas group the benches for browsing.
 - **Bench page.** Each adoptable *side* shows the donor, the plaque text, the
   adoption date and when the term ends — or an adoption form if it is open.
 - **Adopt.** Donor name + plaque text (max 7 lines, as VCPA requires). Existing
   bench $3,500, new bench $5,500, 10-year term. There is no payment: a demo
   wallet in the header adds $10,000 per click.
-- **Install & adopt.** The Parade Ground has 12 pre-approved spots for new
-  benches, shown as their own cards.
+- **Install & adopt.** The Great Lawn has 12 pre-approved spots for new
+  benches along its edge, shown as dashed pins and their own cards.
 
 ## How it is built
 
 Next.js 16 (App Router, server components + server actions), Supabase
-Postgres, Leaflet with OpenStreetMap tiles, Tailwind. Deployed on Vercel.
+Postgres, Leaflet (`CRS.Simple`, no tiles), Tailwind. Deployed on Vercel.
 
 ```
 supabase/schema.sql      tables, constraints, the partial unique index, views, adopt_bench()
-supabase/seed.sql        deterministic seed: 9 areas, 520 benches, 12 slots, ~400 adoptions
+supabase/seed.sql        GENERATED seed: 9 areas, 520 benches + 12 slots with positions, ~480 adoptions
+src/lib/park.ts          the park: areas, paths, lake — the map and the seed both read it
+scripts/generate-seed.mts  places benches along each area's paths → supabase/seed.sql
 src/lib/queries.ts       reads (area_summary, bench_sides views)
 src/app/actions.ts       the one write: adoptBench → adopt_bench() RPC
 src/app/                 /  ·  /areas/[id]  ·  /benches/[id]
@@ -35,7 +40,8 @@ DECISIONS.md             every design decision, with the alternative considered
 
 ### Data model in one paragraph
 
-`benches` is the physical inventory (id, area, style, 4/8 ft, installed flag).
+`benches` is the physical inventory (id, area, style, 4/8 ft, installed flag,
+position).
 `adoptions` is an append-only event log keyed by `(bench_id, side)`, with
 `adopted_at`, `term_years`, `status`. The unit of adoption is a bench **side**
 because an 8 ft bench has two. Nothing derived is stored: the `bench_sides`
@@ -55,15 +61,16 @@ See [DECISIONS.md](DECISIONS.md) for the reasoning behind each of these.
 ```bash
 npm install
 cp .env.example .env.local     # fill in SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
-# in the Supabase SQL editor: run supabase/schema.sql, then supabase/seed.sql
+# in the Supabase SQL editor: run supabase/schema.sql, then supabase/seed.sql (both re-runnable)
 npm run dev
+npm run generate-seed          # only if you change the park layout in src/lib/park.ts
 ```
 
 Prove the concurrency guarantee against your database:
 
 ```bash
 npm run race-test
-# Firing 8 concurrent adoptions at VC-0001 side A…
+# Firing 8 concurrent adoptions at RB-0001 side A…
 # winners: 1, rejected with 23505: 7, other errors: 0
 # active rows on that side in the database: 1
 # PASS
@@ -87,17 +94,19 @@ The short version — each point is expanded in [DECISIONS.md](DECISIONS.md):
 5. **Expiry is lazy.** A lapsed term reads as open; the stale row is flipped
    to `expired` inside `adopt_bench()` the next time that side is adopted. No
    cron. The seed includes ~40 lapsed adoptions so this path is live.
-6. **New benches go in fixed slots**, not anywhere on the map, because VCPA
-   only allows them at pre-approved Parade Ground locations. A slot is a bench
-   row with `installed = false`; only side A is offered until it is built.
-7. **The area is the navigation layer; the bench is the record.** Even
-   Central Park publishes availability per area rather than per bench.
-   Per-bench coordinates would come from VCPA walking the park with a GPS
-   logger; the schema needs only `lat`/`lng` on `benches` to switch to pins.
-8. **The inventory is invented, on purpose and reproducibly.** No public bench
-   list exists. The seed states its rules (per-area counts, every 3rd bench
-   concrete, every 4th 4 ft, ~35% of sides adopted, `setseed(0.42)`). VCPA
-   replaces it with real records on day one.
+6. **New benches go in fixed slots**, not anywhere on the map, because the
+   program only allows them at pre-approved locations. A slot is a bench row
+   with `installed = false`; only side A is offered until it is built.
+7. **The park is fictional and every bench has a position.** The task
+   simulates the service for a park whose benches have been mapped, so
+   benches carry `pos_x`/`pos_y` (park-local metres) and are drawn as pins on
+   a schematic map rather than on real-world tiles. A real survey swaps that
+   for `lat`/`lng` plus a tile layer; the adoption model does not change.
+8. **The inventory is generated, on purpose and reproducibly.** The park
+   layout is one file (`src/lib/park.ts`); a script spaces each area's
+   benches along its paths and writes the seed. Rules are stated (per-area
+   counts, every 3rd bench concrete, every 4th 4 ft, per-area adoption rates
+   from 15% to 60%, `setseed(0.42)`). A real park loads its own records.
 9. **No accounts, no payment.** The wallet is a cookie, not a table — it is a
    demo affordance, not a domain fact. The pledged amount *is* recorded on the
    adoption because that is part of the donation record.

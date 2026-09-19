@@ -19,8 +19,8 @@ function groupSides(rows: BenchSide[]): Bench[] {
   }
   return [...byBench.entries()].map(([id, sides]) => {
     sides.sort((a, b) => a.side.localeCompare(b.side));
-    const { area_id, style, size_ft, installed } = sides[0];
-    return { id, area_id, style, size_ft, installed, sides, status: benchStatus(sides) };
+    const { area_id, style, size_ft, installed, pos_x, pos_y } = sides[0];
+    return { id, area_id, style, size_ft, installed, pos_x, pos_y, sides, status: benchStatus(sides) };
   });
 }
 
@@ -43,12 +43,24 @@ export async function getArea(id: string): Promise<AreaSummary | null> {
   return data as AreaSummary | null;
 }
 
+/** Every bench in the park (≈530 benches / ≈930 sides) for the park map. */
+export async function getAllBenches(): Promise<Bench[]> {
+  const { data, error } = await supabase
+    .from("bench_sides")
+    .select("*")
+    .order("bench_id")
+    .limit(5000);
+  if (error) throw error;
+  return groupSides(data as BenchSide[]);
+}
+
 export async function getBenchesInArea(areaId: string): Promise<Bench[]> {
   const { data, error } = await supabase
     .from("bench_sides")
     .select("*")
     .eq("area_id", areaId)
-    .order("bench_id");
+    .order("bench_id")
+    .limit(5000);
   if (error) throw error;
   return groupSides(data as BenchSide[]);
 }

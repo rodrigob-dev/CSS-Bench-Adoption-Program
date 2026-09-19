@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdoptForm } from "@/components/AdoptForm";
+import { MapLoader } from "@/components/MapLoader";
 import { STATUS_LABEL } from "@/components/status";
 import { formatDate, formatUsd, yearsLeft } from "@/lib/format";
-import { getArea, getBench } from "@/lib/queries";
+import { getAllBenches, getArea, getAreas, getBench } from "@/lib/queries";
 import { STYLE_LABEL, priceFor, type BenchSide } from "@/lib/types";
 import { getBalance } from "@/lib/wallet";
 
@@ -15,13 +16,18 @@ export default async function BenchPage({ params, searchParams }: Props) {
   const [{ id }, { adopted }] = await Promise.all([params, searchParams]);
   const bench = await getBench(id);
   if (!bench) notFound();
-  const [area, balance] = await Promise.all([getArea(bench.area_id), getBalance()]);
+  const [area, areas, allBenches, balance] = await Promise.all([
+    getArea(bench.area_id),
+    getAreas(),
+    getAllBenches(),
+    getBalance(),
+  ]);
   const price = priceFor(bench);
 
   return (
     <div className="space-y-6">
       <nav className="text-sm text-emerald-900/60">
-        <Link href="/" className="hover:underline">All areas</Link> /{" "}
+        <Link href="/" className="hover:underline">Park map</Link> /{" "}
         <Link href={`/areas/${bench.area_id}`} className="hover:underline">{area?.name ?? bench.area_id}</Link> /{" "}
         <span className="font-mono">{bench.id}</span>
       </nav>
@@ -30,11 +36,12 @@ export default async function BenchPage({ params, searchParams }: Props) {
         <p className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           Thank you! Side {adopted} is now adopted.{" "}
           {bench.installed
-            ? "VCPA will install your plaque in about 6–8 weeks."
-            : "VCPA will be in touch to schedule the installation (about 3 months)."}
+            ? "The park will install your plaque in about 6–8 weeks."
+            : "The park will be in touch to schedule the installation (about 3 months)."}
         </p>
       )}
 
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_280px]">
       <section className="space-y-1">
         <h1 className="font-mono text-2xl font-semibold tracking-tight text-emerald-950">{bench.id}</h1>
         <p className="text-emerald-900/70">
@@ -45,7 +52,7 @@ export default async function BenchPage({ params, searchParams }: Props) {
             </>
           ) : (
             <>
-              Pre-approved spot for a new 8 ft World&apos;s Fair bench on the {area?.name} perimeter. The bench is
+              Pre-approved spot for a new 8 ft World&apos;s Fair bench on the edge of the {area?.name}. The bench is
               installed once adopted; the second side opens after installation.
             </>
           )}
@@ -55,6 +62,10 @@ export default async function BenchPage({ params, searchParams }: Props) {
           10-year term · fully tax deductible
         </p>
       </section>
+      <div className="h-[200px] overflow-hidden rounded-xl border border-emerald-900/10 shadow-sm">
+        <MapLoader benches={allBenches} areas={areas} focusBench={bench.id} />
+      </div>
+      </div>
 
       <div className={`grid gap-4 ${bench.sides.length > 1 ? "md:grid-cols-2" : "max-w-xl"}`}>
         {bench.sides.map((s) => (

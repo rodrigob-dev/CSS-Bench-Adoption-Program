@@ -13,17 +13,9 @@ export const STATUS_CARD: Record<BenchStatus, string> = {
   full: "border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200",
 };
 
-export const STATUS_DOT: Record<BenchStatus, string> = {
-  open: "bg-blue-500",
-  partial: "bg-blue-400 ring-2 ring-white outline outline-blue-400",
-  full: "bg-gray-400",
-};
-
-/** Map marker colour from the share of open sides in an area. */
-export function areaColor(open: number, total: number): string {
-  if (total === 0) return "#9ca3af";
-  const share = open / total;
-  if (share >= 0.5) return "#2563eb";
-  if (share > 0) return "#60a5fa";
-  return "#9ca3af";
-}
+/** Marker styles for bench pins on the map. */
+export const PIN = {
+  open: { color: "#1d4ed8", fillColor: "#3b82f6" },
+  partial: { color: "#1d4ed8", fillColor: "#ffffff" },
+  full: { color: "#6b7280", fillColor: "#9ca3af" },
+} as const;
