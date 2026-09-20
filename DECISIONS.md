@@ -149,3 +149,31 @@ form mirrors it with a live line counter.
   them, the UI does not expose them.
 - No search/filter beyond area.
 - No accounts, so "my adoptions" does not exist.
+
+## 16. A plaque is reserved the moment the form opens, not when the bench is clicked
+
+The question was *when* to secure a plaque so two people cannot double-book
+it. Three candidate moments:
+
+- **On bench click** — too early. Browsing a bench should not block both of
+  its plaques for everyone else.
+- **On submit only** — correct but unkind. Two people can spend ten minutes
+  each writing a plaque and one of them loses at the last click.
+- **On plaque click** (the form opens) — the choice. That is the moment intent
+  becomes explicit.
+
+So opening the form takes a **10-minute hold**: a row in `adoptions` with
+`status = 'held'`, a random per-browser `hold_token` (httpOnly cookie; there
+are no accounts, so the token *is* the identity) and `held_until`. The same
+partial unique index that guards adoptions now covers `status in ('held',
+'active')`, so a second hold, or a direct adoption over someone's hold, is
+rejected by the database with `23505`. Submitting converts the hold in place
+(`adopt_bench` updates the held row to `active` when the token matches);
+cancelling releases it; leaving lets it expire. Expiry is lazy like the
+10-year term: `sweep_side()` flips lapsed holds to `cancelled` at the start
+of every write on that side, so no scheduled job is needed. Other visitors
+see the plaque as "being adopted now" with the time it frees up.
+
+Ten minutes is a guess at "long enough to type seven lines, short enough
+that an abandoned tab does not block a bench through lunch"; it is a single
+constant in `hold_plaque()`.

@@ -18,7 +18,7 @@ export default async function BenchPage({ params, searchParams }: Props) {
   const backdrop = AREA_BY_ID[bench.area_id]?.backdrop ?? "lawn";
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 px-4 py-8">
+    <div className="mx-auto max-w-[1440px] space-y-4 px-4 py-6">
       <nav className="text-sm text-emerald-900/60">
         <Link href="/" className="hover:underline">Park map</Link> /{" "}
         <Link href={`/areas/${bench.area_id}`} className="hover:underline">{area?.name ?? bench.area_id}</Link> /{" "}

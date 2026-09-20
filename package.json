@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "race-test": "tsx --env-file=.env.local scripts/race-test.mts",
-    "generate-seed": "tsx scripts/generate-seed.mts"
+    "generate-seed": "tsx scripts/generate-seed.mts",
+    "postinstall": "node scripts/copy-map-worker.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

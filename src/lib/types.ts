@@ -1,5 +1,5 @@
 export type Side = "A" | "B";
-export type SideStatus = "open" | "adopted";
+export type SideStatus = "open" | "adopted" | "held";
 export type BenchStyle = "worlds_fair" | "concrete";
 export type AdoptionKind = "adopt" | "install_and_adopt";
 
@@ -35,6 +35,10 @@ export type BenchSide = {
   adopted_at: string | null;
   term_years: number | null;
   expires_at: string | null;
+  /** While someone is filling in the form for this side (10-minute hold). */
+  held_until: string | null;
+  /** True when the hold belongs to this browser (computed server-side). */
+  held_by_me?: boolean;
 };
 
 export type BenchStatus = "open" | "partial" | "full";

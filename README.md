@@ -15,9 +15,11 @@ park whose benches have all been mapped, so every bench has a position.
   for donor and status, click to open. Areas group the benches for browsing.
 - **Bench page.** Each adoptable *side* shows the donor, the plaque text, the
   adoption date and when the term ends — or an adoption form if it is open.
-- **Adopt.** Donor name + plaque text (max 7 lines, as VCPA requires). Existing
-  bench $3,500, new bench $5,500, 10-year term. There is no payment: a demo
-  wallet in the header adds $10,000 per click.
+- **Adopt.** Click a plaque and it is reserved for you for 10 minutes while
+  you fill in VCPA's form (name, email, honoree, plaque text of up to 7 lines
+  / 300 characters, the 6–8 week acknowledgement). Your text appears on the
+  plaque as you type. Existing bench $3,500, new bench $5,500, 10-year term.
+  There is no payment: a demo wallet in the header adds $10,000 per click.
 - **Install & adopt.** The Great Lawn has 12 pre-approved spots for new
   benches along its edge, shown as dashed pins and their own cards.
 
@@ -50,8 +52,8 @@ the SQL function `adopt_bench()`, and the only thing that prevents two people
 adopting the same side at the same time is a partial unique index:
 
 ```sql
-create unique index one_active_adoption_per_side
-  on adoptions (bench_id, side) where status = 'active';
+create unique index one_live_adoption_per_side
+  on adoptions (bench_id, side) where status in ('held', 'active');
 ```
 
 See [DECISIONS.md](DECISIONS.md) for the reasoning behind each of these.
@@ -86,9 +88,14 @@ The short version — each point is expanded in [DECISIONS.md](DECISIONS.md):
    side is active. `adopted_by`/`adopted_until` columns on the bench would lose
    the previous donor the moment a term ends.
 3. **The database refuses the double adoption.** A partial unique index on
-   `(bench_id, side) where status = 'active'` makes the second concurrent
-   insert fail with `23505`; the app turns that into "someone just adopted
-   this side". Checking in application code first cannot fix a race.
+   `(bench_id, side) where status in ('held', 'active')` makes the second
+   concurrent insert fail with `23505`; the app turns that into "someone is
+   adopting this plaque". Checking in application code first cannot fix a
+   race.
+3b. **A plaque is reserved when its form opens, for 10 minutes.** Clicking a
+   plaque takes a hold (same table, `status = 'held'`, per-browser token);
+   submitting converts it, cancelling releases it, silence lets it lapse.
+   Clicking the bench reserves nothing — that is still browsing.
 4. **Nothing derived is stored.** No `is_adopted`, no `expires_at`; both are
    computed on read from `adopted_at + term_years`.
 5. **Expiry is lazy.** A lapsed term reads as open; the stale row is flipped

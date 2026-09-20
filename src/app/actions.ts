@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { ensureHoldToken, getHoldToken } from "@/lib/session";
 import { getBalance, setBalance } from "@/lib/wallet";
 import { formatUsd } from "@/lib/format";
 import { MAX_PLAQUE_CHARS, MAX_PLAQUE_LINES, priceFor } from "@/lib/types";
@@ -12,6 +13,40 @@ const TOP_UP_USD = 10_000;
 export async function addFunds(): Promise<void> {
   await setBalance((await getBalance()) + TOP_UP_USD);
   revalidatePath("/", "layout");
+}
+
+export type HoldResult = { until: string } | { error: string };
+
+/**
+ * Reserve a plaque for 10 minutes while the form is filled in. Called the
+ * moment the plaque is clicked. Two people cannot hold the same side: the
+ * partial unique index rejects the second hold with 23505.
+ */
+export async function holdPlaque(benchId: string, side: string): Promise<HoldResult> {
+  if (side !== "A" && side !== "B") return { error: "Pick a side." };
+  const token = await ensureHoldToken();
+  const { data, error } = await supabase.rpc("hold_plaque", { p_bench_id: benchId, p_side: side, p_token: token });
+  if (error) {
+    switch (error.code) {
+      case "23505":
+        return { error: "Someone is adopting this plaque right now. It frees up in 10 minutes if they don't finish — or pick another." };
+      case "P0001":
+        return { error: "That plaque is not available on this bench." };
+      default:
+        console.error("hold_plaque failed", error);
+        return { error: "Could not reserve the plaque. Please try again." };
+    }
+  }
+  revalidatePath(`/benches/${encodeURIComponent(benchId)}`);
+  return { until: data as string };
+}
+
+/** Free a hold early (the person cancelled). */
+export async function releaseHold(benchId: string, side: string): Promise<void> {
+  const token = await getHoldToken();
+  if (!token) return;
+  await supabase.rpc("release_hold", { p_bench_id: benchId, p_side: side, p_token: token });
+  revalidatePath(`/benches/${encodeURIComponent(benchId)}`);
 }
 
 export type AdoptState = { error: string } | null;
@@ -61,6 +96,8 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
 
   // Single write path. A concurrent adoption of the same side is rejected by
   // the partial unique index inside this call (SQLSTATE 23505).
+  // Converts this browser's hold into the adoption; without a hold it inserts
+  // directly and the partial unique index still guarantees at most one.
   const { error } = await supabase.rpc("adopt_bench", {
     p_bench_id: benchId,
     p_side: side,
@@ -70,12 +107,13 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
     p_honoree_name: honoreeName || null,
     p_notes: notes || null,
     p_timeline_ack: timelineAck,
+    p_token: await getHoldToken(),
   });
 
   if (error) {
     switch (error.code) {
       case "23505":
-        return { error: "Someone just adopted this side. Pick another one." };
+        return { error: "Someone else is adopting this plaque right now. Pick another one." };
       case "P0001":
         return { error: "That side is not available on this bench." };
       case "P0002":

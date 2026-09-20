@@ -1,4 +1,5 @@
 import "server-only";
+import { getHoldToken } from "./session";
 import { supabase } from "./supabase";
 import type { AreaSummary, Bench, BenchSide, BenchStatus } from "./types";
 
@@ -72,5 +73,20 @@ export async function getBench(id: string): Promise<Bench | null> {
     .eq("bench_id", id);
   if (error) throw error;
   const rows = data as BenchSide[];
-  return rows.length ? groupSides(rows)[0] : null;
+  if (!rows.length) return null;
+
+  // Which of the live holds on this bench are mine? Compared server-side so
+  // the token never leaves the server.
+  const token = await getHoldToken();
+  if (token && rows.some((r) => r.side_status === "held")) {
+    const { data: mine } = await supabase
+      .from("adoptions")
+      .select("side")
+      .eq("bench_id", id)
+      .eq("status", "held")
+      .eq("hold_token", token);
+    const mySides = new Set((mine ?? []).map((m) => m.side as string));
+    for (const r of rows) r.held_by_me = r.side_status === "held" && mySides.has(r.side);
+  }
+  return groupSides(rows)[0];
 }

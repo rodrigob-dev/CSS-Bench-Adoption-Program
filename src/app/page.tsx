@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CountUp, Reveal } from "@/components/motion";
 import { PARK } from "@/lib/park";
 import { getAreas } from "@/lib/queries";
 
@@ -27,17 +28,17 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[url('/bench/bg/meadow.jpg')] bg-cover bg-[center_65%]" aria-hidden />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-deep via-forest-deep/60 to-forest-deep/20" aria-hidden />
         <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-24 sm:pb-24 sm:pt-32">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-lime-soft">Tribute giving</p>
-          <h1 className="font-display text-6xl font-black uppercase leading-[0.9] tracking-tight sm:text-8xl">Adopt-A-Bench</h1>
-          <p className="mt-5 max-w-xl text-xl leading-snug text-white/90 sm:text-2xl">
+          <p className="hero-in mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-lime-soft">Tribute giving</p>
+          <h1 className="hero-in font-display text-6xl font-black uppercase leading-[0.9] tracking-tight sm:text-8xl" style={{ animationDelay: "120ms" }}>Adopt-A-Bench</h1>
+          <p className="hero-in mt-5 max-w-xl text-xl leading-snug text-white/90 sm:text-2xl" style={{ animationDelay: "260ms" }}>
             Tell your story in {PARK.name} and help maintain the park&apos;s {totals.benches}+ benches and their surrounding landscapes.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link href="/map" className="rounded-full bg-lime px-6 py-3 font-display text-lg font-bold uppercase tracking-wide text-ink hover:brightness-95">
+          <div className="hero-in mt-8 flex flex-wrap items-center gap-4" style={{ animationDelay: "400ms" }}>
+            <Link href="/map" className="btn-pop rounded-full bg-lime px-6 py-3 font-display text-lg font-bold uppercase tracking-wide text-ink">
               Find a bench
             </Link>
             <span className="text-white/80">
-              <span className="font-display text-2xl font-bold text-white">{totals.open}</span> plaques open right now
+              <CountUp value={totals.open} className="font-display text-2xl font-bold text-white" /> plaques open right now
             </span>
           </div>
         </div>
@@ -45,7 +46,7 @@ export default async function HomePage() {
 
       {/* intro */}
       <section className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-[3fr_2fr] md:items-start">
-        <div className="space-y-5 text-lg leading-relaxed text-ink/85">
+        <Reveal className="space-y-5 text-lg leading-relaxed text-ink/85">
           <h2 className="font-display text-4xl font-extrabold uppercase tracking-tight text-forest">Honor. Commemorate. Propose.</h2>
           <p>
             The Adopt-A-Bench program provides funding to maintain and endow the care of {PARK.name}&apos;s benches and the
@@ -56,18 +57,20 @@ export default async function HomePage() {
             Choose the exact bench — and the exact plaque — you want, see your text on it before you commit, and submit your
             adoption in minutes.
           </p>
-        </div>
-        <dl className="grid grid-cols-3 gap-4 rounded-2xl bg-sand p-6 md:grid-cols-1">
-          <Stat value={totals.benches} label="benches in the park" />
-          <Stat value={totals.open} label="plaques open" accent />
-          <Stat value={totals.slots} label="spots for a new bench" />
-        </dl>
+        </Reveal>
+        <Reveal delay={150}>
+          <dl className="grid grid-cols-3 gap-4 rounded-2xl bg-sand p-6 md:grid-cols-1">
+            <Stat value={totals.benches} label="benches in the park" />
+            <Stat value={totals.open} label="plaques open" accent />
+            <Stat value={totals.slots} label="spots for a new bench" />
+          </dl>
+        </Reveal>
       </section>
 
       {/* options */}
       <section className="bg-sand">
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="mb-8 font-display text-4xl font-extrabold uppercase tracking-tight text-forest">Two ways to give</h2>
+          <Reveal><h2 className="mb-8 font-display text-4xl font-extrabold uppercase tracking-tight text-forest">Two ways to give</h2></Reveal>
           <div className="grid gap-6 md:grid-cols-2">
             <Tier
               title="Bench adoption"
@@ -82,6 +85,7 @@ export default async function HomePage() {
               body="A new bench with a personalized plaque is installed in a pre-approved location on the edge of the Great Lawn. Limited spots; subject to approval by NYC Parks. About 3 months."
               cta="See available spots"
               href="/areas/great-lawn"
+              delay={150}
             />
           </div>
         </div>
@@ -89,7 +93,7 @@ export default async function HomePage() {
 
       {/* faq */}
       <section id="faq" className="mx-auto max-w-4xl px-4 py-16">
-        <h2 className="mb-6 font-display text-4xl font-extrabold uppercase tracking-tight text-forest">Frequently asked questions</h2>
+        <Reveal><h2 className="mb-6 font-display text-4xl font-extrabold uppercase tracking-tight text-forest">Frequently asked questions</h2></Reveal>
         <div className="divide-y divide-black/10 border-y border-black/10">
           {FAQ.map(([q, a]) => (
             <details key={q} className="group py-4">
@@ -102,7 +106,7 @@ export default async function HomePage() {
           ))}
         </div>
         <div className="mt-10 text-center">
-          <Link href="/map" className="inline-block rounded-full bg-forest px-8 py-3 font-display text-lg font-bold uppercase tracking-wide text-white hover:bg-forest-deep">
+          <Link href="/map" className="btn-pop inline-block rounded-full bg-forest px-8 py-3 font-display text-lg font-bold uppercase tracking-wide text-white hover:bg-forest-deep">
             Find a bench
           </Link>
         </div>
@@ -114,21 +118,21 @@ export default async function HomePage() {
 function Stat({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
   return (
     <div>
-      <dd className={`font-display text-4xl font-black ${accent ? "text-forest" : "text-ink"}`}>{value.toLocaleString("en-US")}</dd>
+      <dd className={`font-display text-4xl font-black ${accent ? "text-forest" : "text-ink"}`}><CountUp value={value} /></dd>
       <dt className="text-xs font-semibold uppercase tracking-wider text-ink/60">{label}</dt>
     </div>
   );
 }
 
-function Tier({ title, price, body, cta, href }: { title: string; price: string; body: string; cta: string; href: string }) {
+function Tier({ title, price, body, cta, href, delay = 0 }: { title: string; price: string; body: string; cta: string; href: string; delay?: number }) {
   return (
-    <div className="flex flex-col rounded-2xl bg-white p-8 shadow-sm">
+    <Reveal delay={delay} className="flex flex-col rounded-2xl bg-white p-8 shadow-sm transition-shadow hover:shadow-lg">
       <h3 className="font-display text-2xl font-extrabold uppercase tracking-wide text-ink">{title}</h3>
       <p className="mt-1 font-display text-4xl font-black text-forest">{price}</p>
       <p className="mt-4 flex-1 leading-relaxed text-ink/80">{body}</p>
-      <Link href={href} className="mt-6 inline-block self-start rounded-full bg-lime px-5 py-2.5 font-display font-bold uppercase tracking-wide text-ink hover:brightness-95">
+      <Link href={href} className="btn-pop mt-6 inline-block self-start rounded-full bg-lime px-5 py-2.5 font-display font-bold uppercase tracking-wide text-ink">
         {cta}
       </Link>
-    </div>
+    </Reveal>
   );
 }

@@ -5,7 +5,9 @@ import type { Side } from "@/lib/types";
 
 export type SceneSide = {
   side: Side;
-  status: "open" | "adopted";
+  status: "open" | "adopted" | "held";
+  /** A hold that belongs to this browser behaves like open (resume editing). */
+  mine?: boolean;
   donor_name?: string | null;
   honoree_name?: string | null;
   plaque_text?: string | null;
@@ -49,13 +51,13 @@ export function BenchScene({ benchId, sides, background, draft = "", editingSide
   const zoomed = editingSide !== null;
 
   // camera: where the bench sits and how big, per view
-  const focus = view === "overview" ? 50 : view === "A" ? PLAQUE.A.left : PLAQUE.B.left;
-  const camScale = zoomed ? 2.6 : view === "overview" ? 1 : 1.45;
+  const focus = view === "overview" || single ? 50 : view === "A" ? PLAQUE.A.left : PLAQUE.B.left;
+  const camScale = zoomed ? 2.7 : view === "overview" ? 1 : 1.5;
   // translate so the focused x (in bench %) lands at the stage centre
-  const benchW = 90; // bench width as % of stage
-  const benchLeft = 5; // bench left offset as % of stage
+  const benchW = 68; // bench width as % of stage (leaves room for the side panel on the right)
+  const benchLeft = 4; // bench left offset as % of stage
   const focusStageX = benchLeft + (focus / 100) * benchW; // in stage %
-  const focusStageY = zoomed ? 27 : 50;
+  const focusStageY = zoomed ? 33 : 50;
   const tx = (50 - focusStageX) * camScale;
   const ty = (50 - focusStageY) * camScale;
 
@@ -66,30 +68,31 @@ export function BenchScene({ benchId, sides, background, draft = "", editingSide
 
   return (
     <div className="@container relative select-none overflow-hidden rounded-2xl bg-[#c9d6c0] shadow-lg">
-      <div className="relative aspect-[16/9] w-full overflow-hidden">
+      <div className="relative aspect-[16/9] w-full overflow-hidden lg:aspect-[21/10]">
         {/* background photo — parallax: moves and scales less than the bench, so it stays sharp */}
         <div
-          className="absolute inset-[-10%] bg-cover bg-[center_60%] transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,0.9,0.25,1)]"
+          className="absolute inset-[-10%] bg-cover bg-[center_70%] transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,0.9,0.25,1)]"
           style={{
             backgroundImage: `url(${background})`,
             transform: `translate(${tx * 0.45}%, ${ty * 0.45}%) scale(${1 + (camScale - 1) * 0.3})`,
           }}
         />
+        {/* ground: darken the lower band so the bench sits in it rather than on top of it */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black/25 to-transparent" />
         {/* ground shadow + bench + plaques move together */}
         <div
           className="absolute inset-0 transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,0.9,0.25,1)]"
           style={{ transform: `translate(${tx}%, ${ty}%) scale(${camScale})`, transformOrigin: "50% 50%" }}
         >
-          <div
-            className="absolute rounded-[50%] bg-black/35 blur-xl"
-            style={{ left: `${benchLeft + 4}%`, width: `${benchW - 8}%`, top: "84%", height: "10%" }}
-          />
-          <div className="absolute" style={{ left: `${benchLeft}%`, width: `${benchW}%`, top: "16%" }}>
+          {/* contact shadow: wide soft + tight dark under the feet */}
+          <div className="absolute rounded-[50%] bg-black/30 blur-2xl" style={{ left: `${benchLeft + 2}%`, width: `${benchW - 4}%`, top: "82%", height: "14%" }} />
+          <div className="absolute rounded-[50%] bg-black/45 blur-md" style={{ left: `${benchLeft + 6}%`, width: `${benchW - 12}%`, top: "88.5%", height: "4%" }} />
+          <div className="absolute" style={{ left: `${benchLeft}%`, width: `${benchW}%`, bottom: "8%" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/bench/bench.png"
               alt=""
-              className={`block w-full drop-shadow-[0_10px_10px_rgba(0,0,0,0.25)] ${ghostBench ? "opacity-55 saturate-50" : ""}`}
+              className={`block w-full [filter:contrast(0.96)_brightness(0.97)_drop-shadow(0_6px_6px_rgba(0,0,0,0.35))] ${ghostBench ? "opacity-55 saturate-50" : ""}`}
               draggable={false}
             />
             {sides.map((s) => (
@@ -101,7 +104,7 @@ export function BenchScene({ benchId, sides, background, draft = "", editingSide
                 editing={editingSide === s.side}
                 dim={view !== "overview" && view !== s.side}
                 onClick={() => {
-                  if (s.status === "adopted") return;
+                  if (s.status === "adopted" || (s.status === "held" && !s.mine)) return;
                   go(s.side);
                   onPlaqueClick?.(s.side);
                 }}
@@ -141,17 +144,18 @@ function Plaque({
   data, pos, draft, editing, dim, onClick,
 }: { data: SceneSide; pos: { left: number; top: number }; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
   const adopted = data.status === "adopted";
+  const heldByOther = data.status === "held" && !data.mine;
   const text = adopted ? data.plaque_text ?? "" : draft;
-  const ghost = !adopted && !editing && !draft;
+  const ghost = !adopted && !heldByOther && !editing && !draft;
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={adopted}
-      title={adopted ? `Adopted by ${data.donor_name}` : "Adopt this plaque"}
+      disabled={adopted || heldByOther}
+      title={adopted ? `Adopted by ${data.donor_name}` : heldByOther ? "Someone is adopting this plaque right now" : "Adopt this plaque"}
       className={`plaque absolute overflow-hidden transition-[opacity,box-shadow,filter] duration-500 ${
         adopted ? "cursor-default" : "cursor-pointer"
-      } ${ghost ? "plaque-ghost" : ""} ${dim ? "opacity-60" : "opacity-100"} ${editing ? "plaque-editing" : ""}`}
+      } ${ghost ? "plaque-ghost" : ""} ${heldByOther ? "plaque-held" : ""} ${dim ? "opacity-60" : "opacity-100"} ${editing ? "plaque-editing" : ""}`}
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
@@ -168,6 +172,10 @@ function Plaque({
         {ghost ? (
           <span className="plaque-text whitespace-nowrap text-[0.9cqw] uppercase tracking-[0.22em]">
             Your plaque here
+          </span>
+        ) : heldByOther ? (
+          <span className="plaque-text whitespace-nowrap text-[0.8cqw] uppercase tracking-[0.18em]">
+            Being adopted…
           </span>
         ) : (
           <pre className="plaque-text max-h-full whitespace-pre-wrap break-words text-center text-[0.74cqw] leading-[1.22]">

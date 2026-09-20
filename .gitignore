@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 .DS_Store
 !.env.example
+
+# copied by scripts/copy-map-worker.mjs on install
+public/vendor/

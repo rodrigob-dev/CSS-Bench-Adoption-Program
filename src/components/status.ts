@@ -19,3 +19,9 @@ export const PIN = {
   partial: { color: "#1d4ed8", fillColor: "#ffffff" },
   full: { color: "#6b7280", fillColor: "#9ca3af" },
 } as const;
+
+export const SIDE_LABEL: Record<"open" | "adopted" | "held", string> = {
+  open: "Open",
+  adopted: "Adopted",
+  held: "Being adopted now",
+};

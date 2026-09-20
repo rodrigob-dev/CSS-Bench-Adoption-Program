@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapGL, { Layer, Marker, Popup, Source, type MapRef } from "react-map-gl/maplibre";
-import type { Map as MapLibreMap, MapLayerMouseEvent, MapLibreEvent } from "maplibre-gl";
+import { setWorkerUrl, type Map as MapLibreMap, type MapLayerMouseEvent, type MapLibreEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { buildBasemap, STREETS } from "@/lib/basemap";
 import { bboxOf, centroid, toLngLat } from "@/lib/geo";
@@ -23,6 +23,9 @@ type Props = {
   onSelectBench?: (id: string) => void;
   areasClickable?: boolean;
 };
+
+// Turbopack does not serve MapLibre's module worker; it is copied to public/ on install.
+setWorkerUrl("/vendor/maplibre-gl-worker.mjs");
 
 const PARK_BBOX = bboxOf([[0, 0], [PARK.width, PARK.height]]);
 const CITY = bboxOf([[-700, -520], [1700, 1250]]);
@@ -73,6 +76,7 @@ export default function ParkMap({
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [ready, setReady] = useState(false);
+  const [debug, setDebug] = useState<string[]>([]);
   const [hoverBench, setHoverBench] = useState<Bench | null>(null);
   const basemap = useMemo(() => buildBasemap(), []);
   const byId = useMemo(() => new Map(areas.map((a) => [a.id, a])), [areas]);
@@ -178,11 +182,14 @@ export default function ParkMap({
       attributionControl={false}
       interactiveLayerIds={ready ? ["benches", ...(areasClickable ? ["lawns"] : [])] : []}
       onLoad={onLoad}
+      onError={(e) => setDebug((d) => [...d, `error:${e.error?.message ?? String(e)}`])}
+      onStyleData={() => setDebug((d) => (d.includes("styledata") ? d : [...d, "styledata"]))}
       onMouseMove={onMouseMove}
       onMouseLeave={() => { setHoverBench(null); onHoverArea?.(null); }}
       onClick={onClick}
       style={{ width: "100%", height: "100%" }}
     >
+      <div hidden data-map-debug={JSON.stringify({ ready, debug })} />
       {/* city */}
       <Source id="ground" type="geojson" data={basemap.ground}><Layer id="ground" type="fill" paint={{ "fill-color": "#f1efe9" }} /></Source>
       <Source id="blocks" type="geojson" data={basemap.blocks}><Layer id="blocks" type="fill" paint={{ "fill-color": "#e8e6df" }} /></Source>
