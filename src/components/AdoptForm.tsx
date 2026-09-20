@@ -87,9 +87,9 @@ export function AdoptForm({ benchId, side, price, balance, install, onPlaqueChan
       <button
         type="submit"
         disabled={pending || tooLong || !canAfford}
-        className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+        className="btn-pop w-full rounded-full bg-lime px-4 py-2.5 font-display text-base font-bold uppercase tracking-wide text-ink disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
       >
-        {pending ? "Adopting…" : `${install ? "Install & adopt" : "Adopt"} side ${side} · ${formatUsd(price)}`}
+        {pending ? "Adopting…" : `${install ? "Install and adopt" : "Adopt"} for ${formatUsd(price)}`}
       </button>
       {!canAfford && (
         <p className="text-xs text-emerald-900/60">

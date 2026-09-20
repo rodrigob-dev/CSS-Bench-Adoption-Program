@@ -33,14 +33,14 @@ type Props = {
  *
  *   overview → slide to the left/right plaque → zoom into a plaque to edit
  *
- * Plaque geometry is a percentage of the bench image (1688 × 923):
- * the top rail runs x 70–1500, y 68–140.
+ * Plaque geometry is a percentage of the bench image (2675 × 1280):
+ * the top slat runs x 210–2507, y 0–62.
  */
 const PLAQUE = {
-  A: { left: 28.5, top: 11.3 },   // left half of the top rail
-  B: { left: 71.5, top: 11.3 },   // right half
-  w: 15,                          // % of bench width  (≈ 10 in on a 6 ft rail)
-  h: 7.4,                         // % of bench height
+  A: { left: 29, top: 3.1 },      // left half of the top slat
+  B: { left: 71, top: 3.1 },      // right half
+  w: 13,                          // % of bench width  (≈ 10 in on a 6 ft rail)
+  h: 5.2,                         // % of bench height
 };
 
 type View = "overview" | Side;
@@ -52,12 +52,12 @@ export function BenchScene({ benchId, sides, background, draft = "", editingSide
 
   // camera: where the bench sits and how big, per view
   const focus = view === "overview" || single ? 50 : view === "A" ? PLAQUE.A.left : PLAQUE.B.left;
-  const camScale = zoomed ? 2.7 : view === "overview" ? 1 : 1.5;
+  const camScale = zoomed ? 2.2 : view === "overview" ? 1 : 1.25;
   // translate so the focused x (in bench %) lands at the stage centre
-  const benchW = 68; // bench width as % of stage (leaves room for the side panel on the right)
-  const benchLeft = 4; // bench left offset as % of stage
+  const benchW = 66; // bench width as % of stage
+  const benchLeft = 17; // bench left offset as % of stage (centred)
   const focusStageX = benchLeft + (focus / 100) * benchW; // in stage %
-  const focusStageY = zoomed ? 33 : 50;
+  const focusStageY = zoomed ? 36 : 50;
   const tx = (50 - focusStageX) * camScale;
   const ty = (50 - focusStageY) * camScale;
 
@@ -68,7 +68,7 @@ export function BenchScene({ benchId, sides, background, draft = "", editingSide
 
   return (
     <div className="@container relative select-none overflow-hidden rounded-2xl bg-[#c9d6c0] shadow-lg">
-      <div className="relative aspect-[16/9] w-full overflow-hidden lg:aspect-[21/10]">
+      <div className="relative aspect-[16/10] w-full overflow-hidden">
         {/* background photo — parallax: moves and scales less than the bench, so it stays sharp */}
         <div
           className="absolute inset-[-10%] bg-cover bg-[center_70%] transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,0.9,0.25,1)]"
@@ -170,15 +170,15 @@ function Plaque({
       <span className="plaque-screw" style={{ right: "5%", bottom: "16%" }} />
       <span className="absolute inset-[9%_11%] flex items-center justify-center">
         {ghost ? (
-          <span className="plaque-text whitespace-nowrap text-[0.9cqw] uppercase tracking-[0.22em]">
+          <span className="plaque-text whitespace-nowrap text-[0.68cqw] uppercase tracking-[0.2em]">
             Your plaque here
           </span>
         ) : heldByOther ? (
-          <span className="plaque-text whitespace-nowrap text-[0.8cqw] uppercase tracking-[0.18em]">
+          <span className="plaque-text whitespace-nowrap text-[0.66cqw] uppercase tracking-[0.16em]">
             Being adopted…
           </span>
         ) : (
-          <pre className="plaque-text max-h-full whitespace-pre-wrap break-words text-center text-[0.74cqw] leading-[1.22]">
+          <pre className="plaque-text max-h-full whitespace-pre-wrap break-words text-center text-[0.62cqw] leading-[1.2]">
             {text || " "}
           </pre>
         )}

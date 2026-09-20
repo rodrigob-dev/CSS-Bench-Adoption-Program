@@ -11,7 +11,7 @@ export default async function AreaPage({ params }: { params: Promise<{ id: strin
   if (!area) notFound();
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-8">
-      <h1 className="text-3xl font-semibold tracking-tight text-emerald-950">{area.name}</h1>
+      <h1 className="font-display text-4xl font-extrabold uppercase tracking-tight text-forest">{area.name}</h1>
       <ParkExplorer areas={areas} benches={benches} initialArea={id} />
     </div>
   );

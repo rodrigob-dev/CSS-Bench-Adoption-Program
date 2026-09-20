@@ -27,7 +27,7 @@ const plaqueName = (bench: Bench, side: Side) => (bench.sides.length === 1 ? "pl
  */
 export function BenchExperience({ bench, areaName, background, price, balance, adoptedJustNow }: Props) {
   const [editing, setEditing] = useState<Side | null>(null);
-  const [holdUntil, setHoldUntil] = useState<string | null>(null);
+  const [holdUntil, setHoldUntil] = useState<string | null>(null); // null while editing = no hold (unmigrated db)
   const [notice, setNotice] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [pending, start] = useTransition();
@@ -70,7 +70,7 @@ export function BenchExperience({ bench, areaName, background, price, balance, a
   };
 
   return (
-    <div className="relative">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
       <div>
         <BenchScene
           benchId={bench.id}
@@ -86,12 +86,12 @@ export function BenchExperience({ bench, areaName, background, price, balance, a
         />
         <p className="mt-2 text-xs text-ink/50">
           {bench.installed
-            ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]} bench in ${areaName}. Photo is representative; plaque positions match the real rail.`
-            : `Pre-approved spot in ${areaName}: a new 8 ft World's Fair bench is installed here once adopted.`}
+            ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]} bench. The photo stands in for the real bench; the plaques sit where they would on its rail.`
+            : `Pre-approved spot in the ${areaName}. The park installs a new 8 ft World's Fair bench here once it is adopted.`}
         </p>
       </div>
 
-      <aside className="mt-4 max-h-full rounded-2xl border border-black/10 bg-white/95 p-5 text-sm shadow-xl backdrop-blur lg:absolute lg:bottom-12 lg:right-5 lg:top-5 lg:mt-0 lg:w-[400px] lg:overflow-y-auto">
+      <aside className="rounded-2xl border border-black/10 bg-white p-5 text-sm shadow-lg">
         {adoptedJustNow && (
           <p className="mb-3 rounded-md border border-lime/60 bg-lime-soft/40 px-3 py-2 text-forest-deep">
             Thank you! The {plaqueName(bench, adoptedJustNow as Side)} is yours.{" "}
@@ -116,7 +116,6 @@ export function BenchExperience({ bench, areaName, background, price, balance, a
               <HoldTimer until={holdUntil} onExpire={() => cancel("Your 10-minute reservation ran out. Click the plaque again to start over.")} />
             )}
             <p className="text-ink/70">
-              {bench.installed ? "Existing bench" : "New bench installation"} · {formatUsd(price)} · 10-year term · fully tax deductible.
               Your text appears on the plaque as you type.
             </p>
             <AdoptForm
@@ -133,8 +132,9 @@ export function BenchExperience({ bench, areaName, background, price, balance, a
             <div>
               <h2 className="font-display text-3xl font-extrabold uppercase tracking-wide text-forest">{bench.id}</h2>
               <p className="text-ink/70">
-                <Link href={`/areas/${bench.area_id}`} className="underline-offset-2 hover:underline">{areaName}</Link> ·{" "}
-                {STATUS_LABEL[bench.status]} · {formatUsd(price)} per plaque
+                {STATUS_LABEL[bench.status]} bench in the{" "}
+                <Link href={`/areas/${bench.area_id}`} className="underline-offset-2 hover:underline">{areaName}</Link>.{" "}
+                {formatUsd(price)} per plaque, 10-year term, fully tax deductible.
               </p>
             </div>
             <ul className="space-y-3">
@@ -155,7 +155,7 @@ export function BenchExperience({ bench, areaName, background, price, balance, a
                         onClick={() => beginAdoption(s.side)}
                         className="mt-2 w-full rounded-full bg-lime px-3 py-2 font-display text-base font-bold uppercase tracking-wide text-ink hover:brightness-95 disabled:opacity-50"
                       >
-                        {pending ? "Reserving…" : s.held_by_me ? "Continue your adoption" : bench.installed ? "Adopt this plaque" : "Install & adopt"} · {formatUsd(price)}
+                        {pending ? "Reserving…" : s.held_by_me ? "Continue your adoption" : bench.installed ? `Adopt this plaque for ${formatUsd(price)}` : `Install a bench here for ${formatUsd(price)}`}
                       </button>
                     ) : s.side_status === "held" ? (
                       <p className="mt-2 text-xs text-amber-800">

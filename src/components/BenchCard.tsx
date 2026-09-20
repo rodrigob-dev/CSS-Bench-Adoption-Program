@@ -7,14 +7,14 @@ export function BenchCard({ bench }: { bench: Bench }) {
   return (
     <Link
       href={`/benches/${bench.id}`}
-      className={`block rounded-lg border-2 px-3 py-2 text-sm transition ${STATUS_CARD[bench.status]}`}
+      className={`block rounded-lg px-3 py-2 text-sm transition-colors ${STATUS_CARD[bench.status]}`}
     >
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-mono font-semibold">{bench.id}</span>
         <span className="text-xs">{STATUS_LABEL[bench.status]}</span>
       </div>
       <div className="mt-0.5 text-xs opacity-70">
-        {bench.installed ? `${bench.size_ft} ft · ${STYLE_LABEL[bench.style]}` : "New bench · install & adopt"}
+        {bench.installed ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]}` : "Spot for a new bench"}
       </div>
       <div className="mt-1.5 flex gap-1">
         {bench.sides.map((s) => (

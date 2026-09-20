@@ -15,7 +15,7 @@ export async function addFunds(): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-export type HoldResult = { until: string } | { error: string };
+export type HoldResult = { until: string | null } | { error: string };
 
 /**
  * Reserve a plaque for 10 minutes while the form is filled in. Called the
@@ -32,6 +32,8 @@ export async function holdPlaque(benchId: string, side: string): Promise<HoldRes
         return { error: "Someone is adopting this plaque right now. It frees up in 10 minutes if they don't finish — or pick another." };
       case "P0001":
         return { error: "That plaque is not available on this bench." };
+      case "PGRST202": // database not migrated yet: no reservation, the unique index still guards the adoption
+        return { until: null };
       default:
         console.error("hold_plaque failed", error);
         return { error: "Could not reserve the plaque. Please try again." };

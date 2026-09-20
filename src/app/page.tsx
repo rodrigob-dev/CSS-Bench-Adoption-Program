@@ -28,7 +28,6 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[url('/bench/bg/meadow.jpg')] bg-cover bg-[center_65%]" aria-hidden />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-deep via-forest-deep/60 to-forest-deep/20" aria-hidden />
         <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-24 sm:pb-24 sm:pt-32">
-          <p className="hero-in mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-lime-soft">Tribute giving</p>
           <h1 className="hero-in font-display text-6xl font-black uppercase leading-[0.9] tracking-tight sm:text-8xl" style={{ animationDelay: "120ms" }}>Adopt-A-Bench</h1>
           <p className="hero-in mt-5 max-w-xl text-xl leading-snug text-white/90 sm:text-2xl" style={{ animationDelay: "260ms" }}>
             Tell your story in {PARK.name} and help maintain the park&apos;s {totals.benches}+ benches and their surrounding landscapes.
@@ -59,7 +58,7 @@ export default async function HomePage() {
           </p>
         </Reveal>
         <Reveal delay={150}>
-          <dl className="grid grid-cols-3 gap-4 rounded-2xl bg-sand p-6 md:grid-cols-1">
+          <dl className="grid grid-cols-3 gap-6 border-t-2 border-forest pt-5 md:grid-cols-1">
             <Stat value={totals.benches} label="benches in the park" />
             <Stat value={totals.open} label="plaques open" accent />
             <Stat value={totals.slots} label="spots for a new bench" />
@@ -126,7 +125,7 @@ function Stat({ value, label, accent }: { value: number; label: string; accent?:
 
 function Tier({ title, price, body, cta, href, delay = 0 }: { title: string; price: string; body: string; cta: string; href: string; delay?: number }) {
   return (
-    <Reveal delay={delay} className="flex flex-col rounded-2xl bg-white p-8 shadow-sm transition-shadow hover:shadow-lg">
+    <Reveal delay={delay} className="flex flex-col rounded-xl bg-white p-8 shadow-[0_12px_32px_-16px_rgba(30,30,30,0.35)]">
       <h3 className="font-display text-2xl font-extrabold uppercase tracking-wide text-ink">{title}</h3>
       <p className="mt-1 font-display text-4xl font-black text-forest">{price}</p>
       <p className="mt-4 flex-1 leading-relaxed text-ink/80">{body}</p>

@@ -39,31 +39,48 @@ const BASE_STYLE = {
 
 /** Bench pin icons drawn on a canvas so the symbol layer needs no sprite. */
 function makeIcons(map: MapLibreMap) {
-  const size = 44, r = 15, c = size / 2;
+  const W = 56, H = 44;
   const draw = (fn: (ctx: CanvasRenderingContext2D) => void) => {
     const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = size;
+    canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d")!;
     fn(ctx);
-    return ctx.getImageData(0, 0, size, size);
+    return ctx.getImageData(0, 0, W, H);
   };
-  const disc = (ctx: CanvasRenderingContext2D, fill: string, stroke: string, dashed = false) => {
-    ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2);
-    ctx.fillStyle = fill; ctx.fill();
-    ctx.lineWidth = 4; ctx.strokeStyle = "#ffffff"; ctx.stroke();
-    ctx.beginPath(); ctx.arc(c, c, r - 3, 0, Math.PI * 2);
-    ctx.lineWidth = 3; ctx.strokeStyle = stroke; if (dashed) ctx.setLineDash([4, 3]); ctx.stroke();
+  /** A small bench glyph: backrest, seat, two legs, on a rounded badge. */
+  const rrect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  };
+  const bench = (ctx: CanvasRenderingContext2D, badge: string, ink: string, opts: { dashed?: boolean; half?: boolean } = {}) => {
+    ctx.save();
+    // badge
+    const r = 10;
+    rrect(ctx, 3, 3, W - 6, H - 6, r);
+    ctx.fillStyle = badge; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+    if (opts.dashed) { ctx.setLineDash([5, 4]); ctx.lineWidth = 2.5; ctx.strokeStyle = ink; rrect(ctx, 6, 6, W - 12, H - 12, r - 3); ctx.stroke(); ctx.setLineDash([]); }
+    if (opts.half) { ctx.save(); rrect(ctx, 3, 3, W - 6, H - 6, r); ctx.clip(); ctx.fillStyle = "#2563eb"; ctx.fillRect(3, 3, (W - 6) / 2, H - 6); ctx.restore(); }
+    // glyph
+    ctx.fillStyle = ink;
+    ctx.fillRect(14, 12, 28, 5);        // backrest rail
+    ctx.fillRect(14, 22, 28, 6);        // seat
+    for (const x of [18, 24, 30, 36]) ctx.fillRect(x, 17, 2.5, 5); // slats
+    ctx.fillRect(16, 28, 3.5, 8);       // legs
+    ctx.fillRect(36.5, 28, 3.5, 8);
+    ctx.restore();
   };
   const icons: Record<string, ImageData> = {
-    open: draw((ctx) => disc(ctx, "#2563eb", "#1e40af")),
-    partial: draw((ctx) => {
-      disc(ctx, "#ffffff", "#1e40af");
-      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, c, size); ctx.clip();
-      ctx.beginPath(); ctx.arc(c, c, r - 4, 0, Math.PI * 2); ctx.fillStyle = "#2563eb"; ctx.fill(); ctx.restore();
-    }),
-    full: draw((ctx) => disc(ctx, "#9ca3af", "#6b7280")),
-    slot: draw((ctx) => disc(ctx, "#ffffff", "#1e40af", true)),
-    "slot-full": draw((ctx) => disc(ctx, "#e5e7eb", "#6b7280", true)),
+    open: draw((ctx) => bench(ctx, "#2563eb", "#ffffff")),
+    partial: draw((ctx) => bench(ctx, "#ffffff", "#1e40af", { half: true })),
+    full: draw((ctx) => bench(ctx, "#9ca3af", "#ffffff")),
+    slot: draw((ctx) => bench(ctx, "#ffffff", "#1e40af", { dashed: true })),
+    "slot-full": draw((ctx) => bench(ctx, "#e5e7eb", "#6b7280", { dashed: true })),
   };
   for (const [name, data] of Object.entries(icons)) {
     if (!map.hasImage(name)) map.addImage(name, data, { pixelRatio: 2 });
@@ -137,7 +154,11 @@ export default function ParkMap({
 
   // interaction ---------------------------------------------------------
   const onLoad = useCallback((e: MapLibreEvent) => {
-    makeIcons(e.target);
+    try {
+      makeIcons(e.target);
+    } catch (err) {
+      setDebug((d) => [...d, `icons:${(err as Error).message}`]);
+    }
     if (process.env.NODE_ENV !== "production") (window as unknown as { __parkMap?: MapLibreMap }).__parkMap = e.target;
     setReady(true);
   }, []);
@@ -162,10 +183,18 @@ export default function ParkMap({
     (e: MapLayerMouseEvent) => {
       const f = e.features?.[0];
       if (!f) return;
-      if (f.layer.id === "benches") onSelectBench?.(f.properties.id as string);
-      else if (f.layer.id === "lawns" && areasClickable) onSelectArea?.(f.properties.area as string);
+      if (f.layer.id === "benches") {
+        // dive onto the bench, then hand over to the bench page
+        const b = benches.find((x) => x.id === f.properties.id);
+        const map = mapRef.current;
+        if (b && map) {
+          setHoverBench(null);
+          map.flyTo({ center: toLngLat([b.pos_x, b.pos_y]), zoom: 19, pitch: 60, bearing: -25, duration: 1100, essential: true });
+          window.setTimeout(() => onSelectBench?.(b.id), 950);
+        } else onSelectBench?.(f.properties.id as string);
+      } else if (f.layer.id === "lawns" && areasClickable) onSelectArea?.(f.properties.area as string);
     },
-    [areasClickable, onSelectArea, onSelectBench],
+    [areasClickable, benches, onSelectArea, onSelectBench],
   );
 
   const showLabels = !focusBench;
@@ -261,7 +290,8 @@ export default function ParkMap({
             type="symbol"
             layout={{
               "icon-image": ["get", "icon"],
-              "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.32, 16, 0.55, 18, 0.95],
+              "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.3, 16, 0.5, 18, 0.85],
+              "icon-anchor": "center",
               "icon-allow-overlap": true,
               "icon-ignore-placement": true,
             }}

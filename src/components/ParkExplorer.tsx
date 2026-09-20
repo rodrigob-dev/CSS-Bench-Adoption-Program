@@ -54,8 +54,8 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
       <aside className="min-h-0">
         {!area ? (
           <>
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-900/50">Pick an area</h2>
-            <ul className="space-y-2">
+            <h2 className="mb-3 font-display text-2xl font-extrabold uppercase tracking-wide text-forest">Pick an area</h2>
+            <ul className="divide-y divide-black/10 border-y border-black/10">
               {areas.map((a) => (
                 <li key={a.id}>
                   <button
@@ -63,21 +63,21 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
                     onClick={() => selectArea(a.id)}
                     onMouseEnter={() => setHovered(a.id)}
                     onMouseLeave={() => setHovered(null)}
-                    className={`block w-full rounded-lg border bg-white px-4 py-3 text-left transition ${
-                      hovered === a.id ? "border-blue-500 shadow-md" : "border-emerald-900/10 hover:border-blue-400"
+                    className={`block w-full px-3 py-3 text-left transition-colors ${
+                      hovered === a.id ? "bg-blue-50" : "hover:bg-sand"
                     }`}
                   >
                     <div className="flex items-baseline gap-3">
-                      <span className="font-medium text-emerald-950">{a.name}</span>
-                      <span className="ml-auto text-sm text-emerald-900/60">{a.benches_total} benches</span>
+                      <span className="font-semibold text-ink">{a.name}</span>
+                      <span className="ml-auto text-sm text-ink/60">{a.benches_total} benches</span>
                     </div>
                     <div className="mt-2 flex items-center gap-3 text-sm">
                       <Meter open={a.sides_open} total={a.sides_total} />
-                      <span className="whitespace-nowrap text-emerald-900/70">
-                        <span className="font-semibold text-blue-700">{a.sides_open}</span> / {a.sides_total} plaques open
+                      <span className="whitespace-nowrap text-ink/70">
+                        <span className="font-semibold text-blue-700">{a.sides_open}</span> of {a.sides_total} plaques open
                       </span>
                     </div>
-                    {a.slots_open > 0 && <div className="mt-1.5 text-xs font-medium text-emerald-800">+ {a.slots_open} spots for a new bench</div>}
+                    {a.slots_open > 0 && <div className="mt-1 text-xs text-forest">{a.slots_open} spots left for a new bench</div>}
                   </button>
                 </li>
               ))}
@@ -86,20 +86,20 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
         ) : (
           <div className="space-y-3">
             <div>
-              <button type="button" onClick={() => selectArea(null)} className="text-xs text-emerald-900/60 hover:underline">← All areas</button>
-              <h2 className="text-xl font-semibold text-emerald-950">{area.name}</h2>
-              <p className="text-sm text-emerald-900/70">{area.description}</p>
-              <p className="mt-1 text-sm text-emerald-900/70">
-                {area.benches_total} benches · <span className="font-semibold text-blue-700">{area.sides_open}</span> of {area.sides_total} plaques open
-                {area.slots_open > 0 && <> · {area.slots_open} spots for a new bench</>}
+              <button type="button" onClick={() => selectArea(null)} className="text-xs text-ink/60 hover:underline">Back to all areas</button>
+              <h2 className="font-display text-3xl font-extrabold uppercase tracking-wide text-forest">{area.name}</h2>
+              <p className="text-sm text-ink/70">{area.description}</p>
+              <p className="mt-1 text-sm text-ink/70">
+                <span className="font-semibold text-blue-700">{area.sides_open}</span> of {area.sides_total} plaques are open on {area.benches_total} benches
+                {area.slots_open > 0 && <>, and {area.slots_open} spots are left for a new bench</>}.
               </p>
             </div>
-            <p className="text-xs text-emerald-900/50">Open benches are pulsing on the map. Click one, or pick from the list.</p>
+            <p className="text-xs text-ink/50">Open benches pulse on the map. Click one there, or pick from the list.</p>
             <div className="grid max-h-[520px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
               {inArea.filter((b) => !b.installed).map((b) => <BenchCard key={b.id} bench={b} />)}
               {inArea.filter((b) => b.installed).map((b) => <BenchCard key={b.id} bench={b} />)}
             </div>
-            <Link href={`/areas/${area.id}`} className="block text-xs text-emerald-900/60 hover:underline">Open this area as a page →</Link>
+            <Link href={`/areas/${area.id}`} className="block text-xs text-ink/60 hover:underline">Link to this area</Link>
           </div>
         )}
       </aside>

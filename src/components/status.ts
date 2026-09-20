@@ -8,9 +8,9 @@ export const STATUS_LABEL: Record<BenchStatus, string> = {
 };
 
 export const STATUS_CARD: Record<BenchStatus, string> = {
-  open: "border-blue-500 bg-blue-50 hover:bg-blue-100",
-  partial: "border-blue-400 border-dashed bg-white hover:bg-blue-50",
-  full: "border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200",
+  open: "bg-blue-50 text-ink ring-1 ring-blue-300 hover:bg-blue-100",
+  partial: "bg-white text-ink ring-1 ring-blue-300 hover:bg-blue-50",
+  full: "bg-gray-100 text-gray-500 ring-1 ring-gray-200 hover:bg-gray-200",
 };
 
 /** Marker styles for bench pins on the map. */
