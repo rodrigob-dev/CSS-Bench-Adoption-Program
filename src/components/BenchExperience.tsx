@@ -7,13 +7,11 @@ import { AdoptForm } from "./AdoptForm";
 import { BenchScene, type SceneSide } from "./BenchScene";
 import { SIDE_LABEL, STATUS_LABEL } from "./status";
 import { formatDate, formatUsd, yearsLeft } from "@/lib/format";
-import type { Backdrop } from "@/lib/park";
 import { STYLE_LABEL, type Bench, type BenchSide, type Side } from "@/lib/types";
 
 type Props = {
   bench: Bench;
   areaName: string;
-  backdrop: Backdrop;
   price: number;
   balance: number;
   adoptedJustNow?: string;
@@ -26,7 +24,7 @@ const plaqueName = (bench: Bench, side: Side) => (bench.sides.length === 1 ? "pl
  * action) before the form opens, so two people cannot fill in the same plaque
  * at once; cancelling releases it; submitting converts it into the adoption.
  */
-export function BenchExperience({ bench, areaName, backdrop, price, balance, adoptedJustNow }: Props) {
+export function BenchExperience({ bench, areaName, price, balance, adoptedJustNow }: Props) {
   const [editing, setEditing] = useState<Side | null>(null);
   const [holdUntil, setHoldUntil] = useState<string | null>(null); // null while editing = no hold (unmigrated db)
   const [notice, setNotice] = useState<string | null>(null);
@@ -76,7 +74,7 @@ export function BenchExperience({ bench, areaName, backdrop, price, balance, ado
         <BenchScene
           benchId={bench.id}
           sides={sides}
-          backdrop={backdrop}
+          areaId={bench.area_id}
           draft={draft}
           editingSide={editing}
           ghostBench={!bench.installed}

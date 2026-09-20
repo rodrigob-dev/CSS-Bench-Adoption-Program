@@ -11,15 +11,11 @@
  */
 export type XY = [number, number];
 
-export type Backdrop = "lawn" | "meadow" | "lake" | "woods";
-
 export type ParkArea = {
   id: string;
   name: string;
   short: string;
   description: string;
-  /** Background photo behind a bench in this area (public/bench/bg/<backdrop>.jpg). */
-  backdrop: Backdrop;
   polygon: XY[];
   /** Paths inside the area; benches are spaced evenly along them. */
   paths: XY[][];
@@ -47,7 +43,6 @@ export const PARK = {
   areas: [
     {
       id: "great-lawn",
-      backdrop: "lawn",
       name: "Great Lawn",
       short: "Great Lawn",
       description: "The big open lawn by the main entrance. The busiest part of the park, and the only area with pre-approved spots for new benches along its edge.",
@@ -62,7 +57,6 @@ export const PARK = {
     },
     {
       id: "willow-lake",
-      backdrop: "lake",
       name: "Willow Lake",
       short: "Willow Lake",
       description: "Benches along the lakeshore loop and by the boathouse.",
@@ -75,7 +69,6 @@ export const PARK = {
     },
     {
       id: "athletic-fields",
-      backdrop: "lawn",
       name: "Athletic Fields",
       short: "Fields",
       description: "Ballfields and the running track on the east side.",
@@ -86,7 +79,6 @@ export const PARK = {
     },
     {
       id: "playground",
-      backdrop: "meadow",
       name: "Meadow Playground",
       short: "Playground",
       description: "Playground, splash pad and the picnic lawn next to it.",
@@ -97,7 +89,6 @@ export const PARK = {
     },
     {
       id: "community-garden",
-      backdrop: "meadow",
       name: "Community Garden",
       short: "Garden",
       description: "Plots, the greenhouse and the pollinator meadow.",
@@ -111,7 +102,6 @@ export const PARK = {
     },
     {
       id: "picnic-groves",
-      backdrop: "meadow",
       name: "Picnic Groves",
       short: "Picnic Groves",
       description: "Shaded picnic groves and grills along the east path.",
@@ -122,7 +112,6 @@ export const PARK = {
     },
     {
       id: "north-woods",
-      backdrop: "woods",
       name: "North Woods",
       short: "North Woods",
       description: "Quiet trail benches under the trees in the north-west.",
@@ -133,7 +122,6 @@ export const PARK = {
     },
     {
       id: "old-oak-grove",
-      backdrop: "woods",
       name: "Old Oak Grove",
       short: "Oak Grove",
       description: "The oldest trees in the park, around the memorial circle.",
@@ -144,7 +132,6 @@ export const PARK = {
     },
     {
       id: "hilltop-overlook",
-      backdrop: "lawn",
       name: "Hilltop Overlook",
       short: "Overlook",
       description: "Benches on the ridge path with the view over the lake.",

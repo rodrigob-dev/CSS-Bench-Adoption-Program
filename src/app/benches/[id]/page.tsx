@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BenchExperience } from "@/components/BenchExperience";
-import { AREA_BY_ID } from "@/lib/park";
 import { getArea, getBench } from "@/lib/queries";
 import { priceFor } from "@/lib/types";
 import { getBalance } from "@/lib/wallet";
@@ -15,7 +14,6 @@ export default async function BenchPage({ params, searchParams }: Props) {
   const bench = await getBench(id);
   if (!bench) notFound();
   const [area, balance] = await Promise.all([getArea(bench.area_id), getBalance()]);
-  const backdrop = AREA_BY_ID[bench.area_id]?.backdrop ?? "lawn";
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-4 px-4 py-6">
@@ -27,7 +25,6 @@ export default async function BenchPage({ params, searchParams }: Props) {
       <BenchExperience
         bench={bench}
         areaName={area?.name ?? bench.area_id}
-        backdrop={backdrop}
         price={priceFor(bench)}
         balance={balance}
         adoptedJustNow={adopted}

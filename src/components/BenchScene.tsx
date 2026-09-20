@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { Backdrop } from "@/lib/park";
-import { SCENES } from "@/lib/scenes";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { sceneFor } from "@/lib/scenes";
 import type { Side } from "@/lib/types";
 
 export type SceneSide = {
@@ -18,7 +17,8 @@ export type SceneSide = {
 type Props = {
   benchId: string;
   sides: SceneSide[];
-  backdrop: Backdrop;
+  /** area id; picks the photograph */
+  areaId: string;
   draft?: string;
   editingSide?: Side | null;
   /** Not-yet-installed spot: outline where the bench will go. */
@@ -35,8 +35,8 @@ const EASE = "transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,0.9
  * on its top rail. The "camera" is a CSS transform on the whole photo:
  * overview → slide to a plaque → zoom in to edit it.
  */
-export function BenchScene({ benchId, sides, backdrop, draft = "", editingSide = null, ghostBench = false, onPlaqueClick, onPickSide }: Props) {
-  const scene = SCENES[backdrop];
+export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = null, ghostBench = false, onPlaqueClick, onPickSide }: Props) {
+  const scene = sceneFor(areaId);
   const single = sides.length === 1;
   const [view, setView] = useState<View>(editingSide ?? "overview");
   const zoomed = editingSide !== null;
@@ -49,7 +49,10 @@ export function BenchScene({ benchId, sides, backdrop, draft = "", editingSide =
   const focus: [number, number] = view === "overview" ? benchCentre : anchor(view);
   const benchSpan = Math.max(bx1 - bx0, ((by1 - by0) / 100) * scene.aspect * 100 * 0.6);
   const overviewScale = Math.min(1.35, Math.max(1, 70 / benchSpan)); // frame the bench, never crop past the photo much
-  const camScale = zoomed ? 3.2 : view === "overview" ? overviewScale : 1.9;
+  // zoom so a plaque fills roughly an eighth of the frame, whatever its size in the photo
+  const editScale = Math.min(5.5, Math.max(2.6, 13 / scene.plaqueSize[0]));
+  const sideScale = Math.min(3, Math.max(1.6, editScale * 0.6));
+  const camScale = zoomed ? editScale : view === "overview" ? overviewScale : sideScale;
   // never pan past the photo's edge: |t| ≤ 50·(scale − 1)
   const limit = 50 * (camScale - 1);
   const clamp = (v: number) => Math.max(-limit, Math.min(limit, v));
@@ -125,7 +128,7 @@ function fitFontSize(text: string, boxW: number, boxH: number): number {
   const lines = text.split("\n");
   const longest = Math.max(1, ...lines.map((l) => l.length));
   const byHeight = (boxH * 0.82) / (lines.length * 1.18);
-  const byWidth = (boxW * 0.88) / (longest * 0.56);
+  const byWidth = (boxW * 0.88) / (longest * 0.66);
   return Math.max(3, Math.min(byHeight, byWidth, boxH * 0.42));
 }
 
@@ -148,6 +151,22 @@ function Plaque({
     return () => ro.disconnect();
   }, []);
   const fontSize = fitFontSize(label || " ", box[0], box[1]);
+  // The estimate above is refined against the real glyphs: shrink until the
+  // text neither wraps past the plate's width nor overflows its height.
+  const preRef = useRef<HTMLPreElement>(null);
+  useLayoutEffect(() => {
+    const el = preRef.current, plate = ref.current;
+    if (!el || !plate) return;
+    let size = fontSize;
+    el.style.fontSize = `${size}px`;
+    for (let i = 0; i < 24 && size > 2.5; i++) {
+      const fitsH = el.scrollHeight <= plate.clientHeight * 0.9;
+      const fitsW = el.scrollWidth <= plate.clientWidth * 0.94;
+      if (fitsH && fitsW) break;
+      size *= 0.93;
+      el.style.fontSize = `${size}px`;
+    }
+  }, [fontSize, label, box]);
 
   return (
     <button
@@ -172,7 +191,8 @@ function Plaque({
       <span className="plaque-screw" style={{ left: "4%", bottom: "14%" }} />
       <span className="plaque-screw" style={{ right: "4%", bottom: "14%" }} />
       <pre
-        className={`plaque-text max-h-full whitespace-pre-wrap break-words px-[8%] text-center leading-[1.18] ${ghost || heldByOther ? "uppercase tracking-[0.18em]" : ""}`}
+        ref={preRef}
+        className={`plaque-text max-h-full whitespace-pre-wrap break-words px-[6%] text-center leading-[1.15] ${ghost || heldByOther ? "uppercase tracking-[0.18em]" : ""}`}
         style={{ fontSize: `${fontSize}px` }}
       >
         {label || " "}
