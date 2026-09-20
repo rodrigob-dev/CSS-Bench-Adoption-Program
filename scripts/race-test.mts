@@ -52,8 +52,8 @@ const { count } = await db
   .select("*", { count: "exact", head: true })
   .eq("bench_id", target.bench_id)
   .eq("side", target.side)
-  .eq("status", "active");
-console.log(`active rows on that side in the database: ${count}`);
+  .in("status", ["pending", "active"]);
+console.log(`live rows on that side in the database: ${count}`);
 
 // clean up: cancel the winner so the seed is unchanged
 for (const w of winners) {

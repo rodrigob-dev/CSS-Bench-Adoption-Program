@@ -192,3 +192,31 @@ transform on the photo: overview, slide to a plaque, zoom in to edit. Plaque
 text sizes itself to fit the plate, so a two-line dedication reads large and
 seven lines read small, the way an engraver would set it. A real park would
 photograph each bench once and record the same two anchor points.
+
+## 18. Requests go to a staff queue; a submission is a request, not an adoption
+
+Who does what:
+
+- **Donor** (no account): browses the map, clicks a plaque (10-minute hold),
+  fills in VCPA's form, submits. The row becomes `pending`: the plaque stays
+  taken, the donor's text shows on it marked as pending, and nothing else
+  happens until staff act.
+- **Park staff** (`/admin`, gated by a shared `ADMIN_KEY` — there are no
+  accounts, and a key in an httpOnly cookie is enough for a two-person
+  office): see every live request, newest first. **Approve** flips it to
+  `active` and stamps `adopted_at`, so the 10-year term starts at approval,
+  not at submission. **Reject** flips it to `cancelled` and the plaque
+  reopens. For a new-bench request they later **mark the bench installed**,
+  which opens its second plaque.
+
+Why a queue instead of instant adoption: the real program takes payment
+offline and checks plaque text by hand, so the moment of truth is staff
+confirmation. Modelling it as a status transition keeps the unique index as
+the only concurrency rule (it now covers `held`, `pending` and `active`)
+and gives staff a single page to work from. What is missing for a real
+rollout, in order: email to the donor and staff on every transition, a
+payment link on approval, and per-staff logins with an audit trail of who
+approved what.
+
+The public demo seeds no adoptions at all, so whoever gets the link can
+adopt a plaque end to end and then approve it in `/admin`.

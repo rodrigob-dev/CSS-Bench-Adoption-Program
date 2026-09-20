@@ -6,7 +6,7 @@ import type { Side } from "@/lib/types";
 
 export type SceneSide = {
   side: Side;
-  status: "open" | "adopted" | "held";
+  status: "open" | "adopted" | "held" | "pending";
   /** A hold that belongs to this browser behaves like open (resume editing). */
   mine?: boolean;
   donor_name?: string | null;
@@ -90,7 +90,7 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
               editing={editingSide === s.side}
               dim={view !== "overview" && view !== s.side}
               onClick={() => {
-                if (s.status === "adopted" || (s.status === "held" && !s.mine)) return;
+                if (s.status === "adopted" || s.status === "pending" || (s.status === "held" && !s.mine)) return;
                 go(s.side);
                 onPlaqueClick?.(s.side);
               }}
@@ -135,7 +135,7 @@ function fitFontSize(text: string, boxW: number, boxH: number): number {
 function Plaque({
   data, centre, size, draft, editing, dim, onClick,
 }: { data: SceneSide; centre: [number, number]; size: [number, number]; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
-  const adopted = data.status === "adopted";
+  const adopted = data.status === "adopted" || data.status === "pending";
   const heldByOther = data.status === "held" && !data.mine;
   const text = adopted ? data.plaque_text ?? "" : draft;
   const ghost = !adopted && !heldByOther && !editing && !draft;
@@ -174,10 +174,10 @@ function Plaque({
       type="button"
       onClick={onClick}
       disabled={adopted || heldByOther}
-      title={adopted ? `Adopted by ${data.donor_name}` : heldByOther ? "Someone is adopting this plaque right now" : "Adopt this plaque"}
+      title={data.status === "pending" ? `Adoption by ${data.donor_name} awaiting approval` : adopted ? `Adopted by ${data.donor_name}` : heldByOther ? "Someone is adopting this plaque right now" : "Adopt this plaque"}
       className={`plaque absolute flex items-center justify-center overflow-hidden transition-[opacity,box-shadow,filter] duration-500 ${
         adopted ? "cursor-default" : "cursor-pointer"
-      } ${ghost ? "plaque-ghost" : ""} ${heldByOther ? "plaque-held" : ""} ${dim ? "opacity-60" : "opacity-100"} ${editing ? "plaque-editing" : ""}`}
+      } ${ghost ? "plaque-ghost" : ""} ${heldByOther || data.status === "pending" ? "plaque-held" : ""} ${dim ? "opacity-60" : "opacity-100"} ${editing ? "plaque-editing" : ""}`}
       style={{
         left: `${centre[0]}%`,
         top: `${centre[1]}%`,

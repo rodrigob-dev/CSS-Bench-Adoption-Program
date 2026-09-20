@@ -1,7 +1,7 @@
 import "server-only";
 import { getHoldToken } from "./session";
 import { supabase } from "./supabase";
-import type { AreaSummary, Bench, BenchSide, BenchStatus } from "./types";
+import type { AreaSummary, Bench, BenchSide, BenchStatus, QueueItem } from "./types";
 
 function benchStatus(sides: BenchSide[]): BenchStatus {
   const open = sides.filter((s) => s.side_status === "open").length;
@@ -89,4 +89,11 @@ export async function getBench(id: string): Promise<Bench | null> {
     for (const r of rows) r.held_by_me = r.side_status === "held" && mySides.has(r.side);
   }
   return groupSides(rows)[0];
+}
+
+/** Staff queue: every live request, pending first. */
+export async function getQueue(): Promise<QueueItem[]> {
+  const { data, error } = await supabase.from("admin_queue").select("*").limit(2000);
+  if (error) throw error;
+  return data as QueueItem[];
 }

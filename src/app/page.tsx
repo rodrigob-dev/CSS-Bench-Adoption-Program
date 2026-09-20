@@ -11,6 +11,7 @@ const FAQ: [string, string][] = [
   ["How long does a plaque stay on the bench?", "Bench adoption is for a term of 10 years. The park will make repairs to your bench during that time. On occasion a bench may need to be removed for capital improvements; we will work with you to relocate your plaque."],
   ["What can the plaque say?", "Up to seven lines and 300 characters. Large amounts of text make the font smaller and harder to read — you can see exactly how it will look as you type."],
   ["An 8 ft bench has two plaques?", "Yes. World's Fair and concrete-base benches come in 8 ft and 4 ft sizes. On an 8 ft bench each side of the top rail carries its own plaque, so two donors can share a bench; a 4 ft bench has a single plaque."],
+  ["What happens after I submit?", "Your plaque is held for you and the request goes to park staff. They confirm your gift, approve the adoption (that is when the 10-year term starts) and order the plaque. If something needs changing they email you; if the request is declined the plaque reopens."],
   ["How long does installation take?", "About 6–8 weeks for a plaque on an existing bench, and about 3 months for a new bench. We cannot guarantee a completion date, although we will do our very best."],
 ];
 

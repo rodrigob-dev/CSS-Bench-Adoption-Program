@@ -40,9 +40,9 @@ export function BenchCard({ bench, onSelect }: Props) {
           <span
             key={s.side}
             className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
-              s.side_status === "open" ? "bg-blue-600 text-white" : s.side_status === "held" ? "bg-amber-400 text-amber-950" : "bg-gray-300 text-gray-700"
+              s.side_status === "open" ? "bg-blue-600 text-white" : s.side_status === "held" || s.side_status === "pending" ? "bg-amber-400 text-amber-950" : "bg-gray-300 text-gray-700"
             }`}
-            title={s.side_status === "open" ? "Open" : s.side_status === "held" ? "Being adopted right now" : `Adopted by ${s.donor_name}`}
+            title={s.side_status === "open" ? "Open" : s.side_status === "held" ? "Being adopted right now" : s.side_status === "pending" ? "Adoption pending approval" : `Adopted by ${s.donor_name}`}
           >
             {s.side}
           </span>

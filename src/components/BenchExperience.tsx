@@ -93,8 +93,9 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
       <aside className="rounded-2xl border border-black/10 bg-white p-5 text-sm shadow-lg">
         {adoptedJustNow && (
           <p className="mb-3 rounded-md border border-lime/60 bg-lime-soft/40 px-3 py-2 text-forest-deep">
-            Thank you! The {plaqueName(bench, adoptedJustNow as Side)} is yours.{" "}
-            {bench.installed ? "The park will install it in about 6–8 weeks." : "The park will be in touch to schedule the installation (about 3 months)."}
+            Thank you! Your request for the {plaqueName(bench, adoptedJustNow as Side)} is in. Park staff review it,
+            confirm your gift, and {bench.installed ? "install the plaque in about 6–8 weeks" : "schedule the installation (about 3 months)"}.
+            The plaque is held for you meanwhile.
           </p>
         )}
         {notice && (
@@ -138,12 +139,12 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
             </div>
             <ul className="space-y-3">
               {bench.sides.map((s) => {
-                const tone = s.side_status === "open" ? "border-blue-300 bg-blue-50/60" : s.side_status === "held" ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-gray-50";
+                const tone = s.side_status === "open" ? "border-blue-300 bg-blue-50/60" : s.side_status === "held" || s.side_status === "pending" ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-gray-50";
                 return (
                   <li key={s.side} className={`rounded-lg border p-3 ${tone}`}>
                     <div className="flex items-baseline justify-between">
                       <span className="font-semibold capitalize">{plaqueName(bench, s.side)}</span>
-                      <span className={`text-xs font-semibold uppercase tracking-wide ${s.side_status === "open" ? "text-blue-700" : s.side_status === "held" ? "text-amber-700" : "text-gray-600"}`}>
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${s.side_status === "open" ? "text-blue-700" : s.side_status === "held" || s.side_status === "pending" ? "text-amber-700" : "text-gray-600"}`}>
                         {s.held_by_me ? "Reserved for you" : SIDE_LABEL[s.side_status]}
                       </span>
                     </div>
@@ -156,6 +157,10 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
                       >
                         {pending ? "Reserving…" : s.held_by_me ? "Continue your adoption" : bench.installed ? `Adopt this plaque for ${formatUsd(price)}` : `Install a bench here for ${formatUsd(price)}`}
                       </button>
+                    ) : s.side_status === "pending" ? (
+                      <p className="mt-2 text-xs text-amber-800">
+                        Requested by {s.donor_name}. Park staff are reviewing it; the plaque is held until they decide.
+                      </p>
                     ) : s.side_status === "held" ? (
                       <p className="mt-2 text-xs text-amber-800">
                         Someone is filling in the form for this plaque. If they don&apos;t finish, it frees up

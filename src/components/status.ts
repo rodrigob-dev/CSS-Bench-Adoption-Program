@@ -20,8 +20,9 @@ export const PIN = {
   full: { color: "#6b7280", fillColor: "#9ca3af" },
 } as const;
 
-export const SIDE_LABEL: Record<"open" | "adopted" | "held", string> = {
+export const SIDE_LABEL: Record<"open" | "adopted" | "held" | "pending", string> = {
   open: "Open",
   adopted: "Adopted",
   held: "Being adopted now",
+  pending: "Pending approval",
 };

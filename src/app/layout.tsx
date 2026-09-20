@@ -46,7 +46,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="font-display text-xl font-extrabold uppercase tracking-wide text-white">{PARK.name} Alliance</div>
               <div className="text-white/60">A fictional park built to simulate the bench adoption service. Prices and terms follow the VCPA program.</div>
             </div>
-            <div className="text-xs text-white/50">Bench and park photography via Unsplash — see public/bench/CREDITS.md</div>
+            <div className="flex items-center gap-4 text-xs text-white/50">
+              <span>Bench and park photography via Pexels and Unsplash (public/bench/CREDITS.md)</span>
+              <Link href="/admin" className="rounded-full border border-white/30 px-3 py-1 text-white/80 hover:bg-white/10">Park staff</Link>
+            </div>
           </div>
         </footer>
       </body>

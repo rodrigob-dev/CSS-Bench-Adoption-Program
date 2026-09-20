@@ -6,6 +6,9 @@ drop function if exists adopt_bench(text, text, text, text, text, text, text, bo
 drop function if exists adopt_bench(text, text, text, text, text, text, text, boolean, text);
 drop function if exists hold_plaque(text, text, text);
 drop function if exists release_hold(text, text, text);
+drop function if exists review_adoption(uuid, text);
+drop function if exists set_installed(text, boolean);
+drop view if exists admin_queue;
 drop view if exists area_summary;
 drop view if exists bench_sides;
 drop table if exists adoptions;
@@ -47,17 +50,18 @@ create index benches_area_idx on benches (area_id);
 -- position (a bench SIDE): an 8 ft bench has A (left) and B (right), a 4 ft
 -- bench only A. Rows are never deleted, so a bench accumulates history.
 --
--- A row starts as a 'held' reservation the moment someone opens the form
--- (10 minutes, see hold_plaque), becomes 'active' when they submit, and is
--- later 'expired' or 'cancelled'. At most one row per side is held-or-active.
+-- Lifecycle: 'held' the moment someone opens the form (10 minutes, see
+-- hold_plaque) → 'pending' when they submit → 'active' when park staff
+-- approve it (the 10-year term starts then) → 'expired' or 'cancelled'.
+-- At most one row per side is live (held, pending or active).
 -- ---------------------------------------------------------------------------
 create table adoptions (
   id          uuid primary key default gen_random_uuid(),
   bench_id    text not null references benches (id),
   side        text not null check (side in ('A', 'B')),
   kind        text not null check (kind in ('adopt', 'install_and_adopt')),
-  status      text not null default 'active'
-              check (status in ('held', 'active', 'expired', 'cancelled')),
+  status      text not null default 'pending'
+              check (status in ('held', 'pending', 'active', 'expired', 'cancelled')),
   -- reservation (only meaningful while status = 'held')
   hold_token  text,                          -- random per-browser secret
   held_until  timestamptz,
@@ -74,7 +78,9 @@ create table adoptions (
   notes       text check (length(notes) <= 1000),                   -- "any additional questions?"
   timeline_acknowledged boolean not null default false,             -- "I understand the 6-8 week timeline"
   amount_usd  int check (amount_usd > 0),
-  adopted_at  timestamptz not null default now(),
+  submitted_at timestamptz not null default now(),
+  adopted_at  timestamptz not null default now(),                  -- reset to approval time by review_adoption
+  reviewed_at timestamptz,
   term_years  int not null default 10 check (term_years > 0),      -- VCPA term is 10 years
   -- a real adoption has the whole form; a hold (live or cancelled) has a token and a deadline
   check (
@@ -92,7 +98,7 @@ create index adoptions_bench_idx on adoptions (bench_id);
 -- rows can pile up underneath.
 create unique index one_live_adoption_per_side
   on adoptions (bench_id, side)
-  where status in ('held', 'active');
+  where status in ('held', 'pending', 'active');
 
 -- ---------------------------------------------------------------------------
 -- bench_sides: one row per adoptable side, joined to its live adoption.
@@ -115,10 +121,10 @@ select
   s.side,
   a.id        as adoption_id,
   a.kind,
-  case when a.status = 'active' then a.donor_name end   as donor_name,
-  case when a.status = 'active' then a.honoree_name end as honoree_name,
-  case when a.status = 'active' then a.plaque_text end  as plaque_text,
-  case when a.status = 'active' then a.amount_usd end   as amount_usd,
+  case when a.status in ('active', 'pending') then a.donor_name end   as donor_name,
+  case when a.status in ('active', 'pending') then a.honoree_name end as honoree_name,
+  case when a.status in ('active', 'pending') then a.plaque_text end  as plaque_text,
+  case when a.status in ('active', 'pending') then a.amount_usd end   as amount_usd,
   case when a.status = 'active' then a.adopted_at end   as adopted_at,
   case when a.status = 'active' then a.term_years end   as term_years,
   case when a.status = 'active' then a.adopted_at + make_interval(years => a.term_years) end as expires_at,
@@ -126,13 +132,14 @@ select
   case
     when a.id is null then 'open'
     when a.status = 'held' then case when a.held_until > now() then 'held' else 'open' end
+    when a.status = 'pending' then 'pending'
     when a.adopted_at + make_interval(years => a.term_years) <= now() then 'open'
     else 'adopted'
   end as side_status
 from benches b
 cross join (values ('A'), ('B')) as s (side)
 left join adoptions a
-  on a.bench_id = b.id and a.side = s.side and a.status in ('held', 'active')
+  on a.bench_id = b.id and a.side = s.side and a.status in ('held', 'pending', 'active')
 where s.side = 'A' or (b.size_ft = 8 and b.installed);
 
 -- ---------------------------------------------------------------------------
@@ -144,6 +151,7 @@ select
   count(distinct bs.bench_id) filter (where bs.installed)                          as benches_total,
   count(*)                    filter (where bs.installed)                          as sides_total,
   count(*)                    filter (where bs.installed and bs.side_status = 'open') as sides_open,
+  count(*)                    filter (where bs.installed and bs.side_status = 'pending') as sides_pending,
   count(distinct bs.bench_id) filter (where not bs.installed and bs.side_status = 'open') as slots_open
 from areas ar
 left join bench_sides bs on bs.area_id = ar.id
@@ -155,10 +163,13 @@ group by ar.id;
 --   hold_plaque()   when someone opens the adoption form: reserves the side
 --                   for 10 minutes under a per-browser token. Refused if
 --                   another live row exists (SQLSTATE 23505 from the index).
---   adopt_bench()   when they submit: turns their hold into an active adoption
+--   adopt_bench()   when they submit: turns their hold into a pending request
 --                   (or inserts one directly if no hold was taken — the index
 --                   still guarantees at most one).
 --   release_hold()  when they cancel: frees the side immediately.
+--   review_adoption()  park staff approve (→ active, term starts) or reject
+--                   (→ cancelled, the side reopens). See admin_queue.
+--   set_installed() park staff record that a new bench has been built.
 --
 -- Lapsed terms and expired holds are cleaned up lazily at the start of each
 -- call, on that side only, so no scheduled job is needed.
@@ -235,7 +246,7 @@ begin
 
   -- convert my own hold, keeping its row
   update adoptions
-     set status = 'active',
+     set status = 'pending',
          donor_name = trim(p_donor_name),
          donor_email = lower(trim(p_donor_email)),
          honoree_name = nullif(trim(p_honoree_name), ''),
@@ -243,7 +254,7 @@ begin
          notes = nullif(trim(p_notes), ''),
          timeline_acknowledged = p_timeline_ack,
          amount_usd = case when v_bench.installed then 3500 else 5500 end,
-         adopted_at = now(),
+         submitted_at = now(),
          hold_token = null, held_until = null
    where bench_id = p_bench_id and side = p_side and status = 'held'
      and p_token is not null and hold_token = p_token
@@ -257,7 +268,7 @@ begin
   values (
     p_bench_id, p_side,
     case when v_bench.installed then 'adopt' else 'install_and_adopt' end,
-    'active',
+    'pending',
     trim(p_donor_name), lower(trim(p_donor_email)), nullif(trim(p_honoree_name), ''),
     trim(p_plaque_text), nullif(trim(p_notes), ''), p_timeline_ack,
     case when v_bench.installed then 3500 else 5500 end
@@ -266,3 +277,41 @@ begin
   return v_row;
 end
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Staff side. There are no accounts; the app gates /admin with a shared key.
+-- ---------------------------------------------------------------------------
+create or replace function review_adoption(p_id uuid, p_action text) returns adoptions
+language plpgsql
+as $$
+declare
+  v_row adoptions%rowtype;
+begin
+  if p_action not in ('approve', 'reject') then
+    raise exception 'bad_action' using errcode = 'P0004';
+  end if;
+  update adoptions
+     set status = case when p_action = 'approve' then 'active' else 'cancelled' end,
+         adopted_at = case when p_action = 'approve' then now() else adopted_at end,
+         reviewed_at = now()
+   where id = p_id and status = 'pending'
+  returning * into v_row;
+  if not found then raise exception 'not_pending' using errcode = 'P0005'; end if;
+  return v_row;
+end
+$$;
+
+create or replace function set_installed(p_bench_id text, p_installed boolean) returns void
+language sql as $$
+  update benches set installed = p_installed where id = p_bench_id;
+$$;
+
+-- What staff see: every live request, newest first.
+create view admin_queue as
+select a.id, a.bench_id, b.area_id, a.side, a.kind, a.status, a.donor_name, a.donor_email,
+       a.honoree_name, a.plaque_text, a.notes, a.amount_usd, a.submitted_at, a.reviewed_at,
+       a.adopted_at, a.held_until, b.installed
+from adoptions a
+join benches b on b.id = a.bench_id
+where a.status in ('held', 'pending', 'active')
+order by case a.status when 'pending' then 0 when 'held' then 1 else 2 end, a.submitted_at desc;

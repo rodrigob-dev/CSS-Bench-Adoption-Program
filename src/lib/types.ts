@@ -1,5 +1,5 @@
 export type Side = "A" | "B";
-export type SideStatus = "open" | "adopted" | "held";
+export type SideStatus = "open" | "adopted" | "held" | "pending";
 export type BenchStyle = "worlds_fair" | "concrete";
 export type AdoptionKind = "adopt" | "install_and_adopt";
 
@@ -12,6 +12,7 @@ export type AreaSummary = {
   benches_total: number;
   sides_total: number;
   sides_open: number;
+  sides_pending: number;
   slots_open: number;
 };
 
@@ -63,6 +64,27 @@ export const MAX_PLAQUE_CHARS = 300;
 export const STYLE_LABEL: Record<BenchStyle, string> = {
   worlds_fair: "World's Fair",
   concrete: "Concrete base",
+};
+
+/** One row of the `admin_queue` view. */
+export type QueueItem = {
+  id: string;
+  bench_id: string;
+  area_id: string;
+  side: Side;
+  kind: AdoptionKind;
+  status: "held" | "pending" | "active";
+  donor_name: string | null;
+  donor_email: string | null;
+  honoree_name: string | null;
+  plaque_text: string | null;
+  notes: string | null;
+  amount_usd: number | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  adopted_at: string;
+  held_until: string | null;
+  installed: boolean;
 };
 
 export const priceFor = (bench: { installed: boolean }) =>

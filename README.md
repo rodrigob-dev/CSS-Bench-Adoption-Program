@@ -22,6 +22,10 @@ park whose benches have all been mapped, so every bench has a position.
   There is no payment: a demo wallet in the header adds $10,000 per click.
 - **Install & adopt.** The Great Lawn has 12 pre-approved spots for new
   benches along its edge, shown as dashed pins and their own cards.
+- **Staff queue.** A submission is a *request*: the plaque is held and the
+  request appears in `/admin` (shared staff key), where the park approves
+  it (the 10-year term starts then), rejects it (the plaque reopens), or
+  records that a new bench has been installed.
 
 ## How it is built
 
@@ -62,7 +66,7 @@ See [DECISIONS.md](DECISIONS.md) for the reasoning behind each of these.
 
 ```bash
 npm install
-cp .env.example .env.local     # fill in SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+cp .env.example .env.local     # SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ADMIN_KEY (for /admin)
 # in the Supabase SQL editor: run supabase/schema.sql, then supabase/seed.sql (both re-runnable)
 npm run dev
 npm run generate-seed          # only if you change the park layout in src/lib/park.ts
@@ -74,7 +78,7 @@ Prove the concurrency guarantee against your database:
 npm run race-test
 # Firing 8 concurrent adoptions at RB-0001 side A…
 # winners: 1, rejected with 23505: 7, other errors: 0
-# active rows on that side in the database: 1
+# live rows on that side in the database: 1
 # PASS
 ```
 
@@ -96,6 +100,10 @@ The short version — each point is expanded in [DECISIONS.md](DECISIONS.md):
    plaque takes a hold (same table, `status = 'held'`, per-browser token);
    submitting converts it, cancelling releases it, silence lets it lapse.
    Clicking the bench reserves nothing — that is still browsing.
+3c. **Submitting creates a request, not an adoption.** It sits in a staff
+   queue (`/admin`) as `pending`, still holding the plaque; approval starts
+   the 10-year term, rejection reopens the plaque. The public demo seeds no
+   adoptions so anyone with the link can go through the whole flow.
 4. **Nothing derived is stored.** No `is_adopted`, no `expires_at`; both are
    computed on read from `adopted_at + term_years`.
 5. **Expiry is lazy.** A lapsed term reads as open; the stale row is flipped
