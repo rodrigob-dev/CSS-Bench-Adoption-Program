@@ -7,12 +7,13 @@ import { AdoptForm } from "./AdoptForm";
 import { BenchScene, type SceneSide } from "./BenchScene";
 import { SIDE_LABEL, STATUS_LABEL } from "./status";
 import { formatDate, formatUsd, yearsLeft } from "@/lib/format";
+import type { Backdrop } from "@/lib/park";
 import { STYLE_LABEL, type Bench, type BenchSide, type Side } from "@/lib/types";
 
 type Props = {
   bench: Bench;
   areaName: string;
-  background: string;
+  backdrop: Backdrop;
   price: number;
   balance: number;
   adoptedJustNow?: string;
@@ -25,7 +26,7 @@ const plaqueName = (bench: Bench, side: Side) => (bench.sides.length === 1 ? "pl
  * action) before the form opens, so two people cannot fill in the same plaque
  * at once; cancelling releases it; submitting converts it into the adoption.
  */
-export function BenchExperience({ bench, areaName, background, price, balance, adoptedJustNow }: Props) {
+export function BenchExperience({ bench, areaName, backdrop, price, balance, adoptedJustNow }: Props) {
   const [editing, setEditing] = useState<Side | null>(null);
   const [holdUntil, setHoldUntil] = useState<string | null>(null); // null while editing = no hold (unmigrated db)
   const [notice, setNotice] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function BenchExperience({ bench, areaName, background, price, balance, a
         <BenchScene
           benchId={bench.id}
           sides={sides}
-          background={background}
+          backdrop={backdrop}
           draft={draft}
           editingSide={editing}
           ghostBench={!bench.installed}
@@ -86,7 +87,7 @@ export function BenchExperience({ bench, areaName, background, price, balance, a
         />
         <p className="mt-2 text-xs text-ink/50">
           {bench.installed
-            ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]} bench. The photo stands in for the real bench; the plaques sit where they would on its rail.`
+            ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]} bench. The photo stands in for the real bench; plaques sit where they would on its rail.`
             : `Pre-approved spot in the ${areaName}. The park installs a new 8 ft World's Fair bench here once it is adopted.`}
         </p>
       </div>

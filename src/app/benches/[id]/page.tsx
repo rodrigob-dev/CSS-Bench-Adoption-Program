@@ -27,7 +27,7 @@ export default async function BenchPage({ params, searchParams }: Props) {
       <BenchExperience
         bench={bench}
         areaName={area?.name ?? bench.area_id}
-        background={`/bench/bg/${backdrop}.jpg`}
+        backdrop={backdrop}
         price={priceFor(bench)}
         balance={balance}
         adoptedJustNow={adopted}

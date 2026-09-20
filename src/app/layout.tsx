@@ -31,10 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="block text-xs font-medium uppercase tracking-widest text-ink/60">Adopt-A-Bench</span>
               </span>
             </Link>
-            <nav className="hidden items-center gap-6 text-sm font-semibold uppercase tracking-wide text-ink/80 md:flex">
-              <Link href="/" className="hover:text-forest">Program</Link>
-              <Link href="/#faq" className="hover:text-forest">FAQ</Link>
-              <Link href="/map" className="rounded-full bg-lime px-4 py-2 text-ink hover:brightness-95">Find a bench</Link>
+            <nav className="flex items-center gap-6 text-sm font-semibold uppercase tracking-wide text-ink/80">
+              <Link href="/" className="hidden hover:text-forest md:inline">Program</Link>
+              <Link href="/#faq" className="hidden hover:text-forest md:inline">FAQ</Link>
+              <Link href="/map" className="btn-pop rounded-full bg-lime px-4 py-2 text-ink">Find a bench</Link>
             </nav>
             <Wallet />
           </div>

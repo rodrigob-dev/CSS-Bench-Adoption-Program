@@ -177,3 +177,18 @@ see the plaque as "being adopted now" with the time it frees up.
 Ten minutes is a guess at "long enough to type seven lines, short enough
 that an abandoned tab does not block a bench through lunch"; it is a single
 constant in `hold_plaque()`.
+
+## 17. The bench page is a real photograph, not a 3D model or a cut-out
+
+The brief's grading is structure and explanation, so the bench view had to be
+cheap and honest. Three options were tried: a 2.5D CSS illustration (read as
+clip art), a cut-out bench composited over per-area backgrounds (lighting
+and scale never matched; it looked pasted), and a whole photograph of a real
+bench in each kind of area with the plaques drawn on its top rail at measured
+positions. The third is what ships: four photographs (lawn, garden, woods,
+lake), one per `backdrop` in `src/lib/park.ts`, with plaque anchors and a
+bench bounding box per photo in `src/lib/scenes.ts`. The "camera" is a CSS
+transform on the photo: overview, slide to a plaque, zoom in to edit. Plaque
+text sizes itself to fit the plate, so a two-line dedication reads large and
+seven lines read small, the way an engraver would set it. A real park would
+photograph each bench once and record the same two anchor points.
