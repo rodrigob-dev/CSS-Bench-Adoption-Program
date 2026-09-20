@@ -18,6 +18,13 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
   const router = useRouter();
   const [focus, setFocus] = useState<string | null>(initialArea);
   const [hovered, setHovered] = useState<string | null>(null);
+  const [diving, setDiving] = useState<string | null>(null);
+
+  /** Dive the camera onto the bench, then open its page; used by the map pins and the list. */
+  const openBench = (id: string) => {
+    setDiving(id);
+    window.setTimeout(() => router.push(`/benches/${id}`), 1000);
+  };
   const area = focus ? areas.find((a) => a.id === focus) ?? null : null;
   const inArea = focus ? benches.filter((b) => b.area_id === focus) : [];
 
@@ -33,10 +40,11 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
           benches={benches}
           areas={areas}
           focusArea={focus}
+          focusBench={diving ?? undefined}
           hoveredArea={hovered}
           onHoverArea={setHovered}
           onSelectArea={selectArea}
-          onSelectBench={(id) => router.push(`/benches/${id}`)}
+          onSelectBench={openBench}
           areasClickable
         />
         <MapLegend compact={Boolean(focus)} />
@@ -96,8 +104,8 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
             </div>
             <p className="text-xs text-ink/50">Open benches pulse on the map. Click one there, or pick from the list.</p>
             <div className="grid max-h-[520px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
-              {inArea.filter((b) => !b.installed).map((b) => <BenchCard key={b.id} bench={b} />)}
-              {inArea.filter((b) => b.installed).map((b) => <BenchCard key={b.id} bench={b} />)}
+              {inArea.filter((b) => !b.installed).map((b) => <BenchCard key={b.id} bench={b} onSelect={openBench} />)}
+              {inArea.filter((b) => b.installed).map((b) => <BenchCard key={b.id} bench={b} onSelect={openBench} />)}
             </div>
             <Link href={`/areas/${area.id}`} className="block text-xs text-ink/60 hover:underline">Link to this area</Link>
           </div>

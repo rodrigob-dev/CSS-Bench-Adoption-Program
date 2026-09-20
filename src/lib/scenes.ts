@@ -35,12 +35,12 @@ export const SCENES: Record<string, Scene> = {
     plaques: { A: [35, 24], B: [65, 24], single: [50, 24] }, plaqueSize: [8, 3.4], bench: [10, 20, 90, 80],
   },
   "community-garden": {
-    src: "/bench/scenes/community-garden.jpg", aspect: 6000 / 3376, credit: "Mike Bird / Pexels",
-    plaques: { A: [33, 22], B: [67, 22], single: [50, 22] }, plaqueSize: [7.5, 3.3], bench: [6, 15, 92, 93],
+    src: "/bench/scenes/community-garden.jpg", aspect: 3478 / 2576, credit: "Simge Tek / Pexels",
+    plaques: { A: [43.3, 42], B: [60, 42], single: [51.5, 42] }, plaqueSize: [6.7, 3.2], bench: [22, 38, 67, 90],
   },
   "picnic-groves": {
-    src: "/bench/scenes/picnic-groves.jpg", aspect: 1969 / 1372, credit: "Rabialogy / Pexels",
-    plaques: { A: [39, 47.5], B: [61, 47.5], single: [50, 47.5] }, plaqueSize: [6.1, 3.7], bench: [20, 42, 80, 85],
+    src: "/bench/scenes/picnic-groves.jpg", aspect: 6000 / 3400, credit: "Omar Castro / Pexels",
+    plaques: { A: [25, 49.8], B: [44, 49.8], single: [34.5, 49.8] }, plaqueSize: [5, 2.4], bench: [16, 47, 53, 81],
   },
   "north-woods": {
     src: "/bench/scenes/north-woods.jpg", aspect: 2400 / 1647, credit: "Elliott Blair / Unsplash",
@@ -51,8 +51,8 @@ export const SCENES: Record<string, Scene> = {
     plaques: { A: [36, 32.6], B: [64, 32.6], single: [50, 32.6] }, plaqueSize: [7, 3.2], bench: [20, 28, 80, 83],
   },
   "hilltop-overlook": {
-    src: "/bench/scenes/hilltop-overlook.jpg", aspect: 2600 / 1680, credit: "Cengizhan Ozturk / Pexels",
-    plaques: { A: [45, 76], B: [58, 76], single: [51.5, 76] }, plaqueSize: [4.5, 2.4], bench: [38, 74, 65, 88],
+    src: "/bench/scenes/hilltop-overlook.jpg", aspect: 2994 / 2335, credit: "Fidan Nazim Qizi / Pexels",
+    plaques: { A: [38, 60.2], B: [58, 60.2], single: [48, 60.2] }, plaqueSize: [6, 2.6], bench: [29, 57, 67, 84],
   },
 };
 

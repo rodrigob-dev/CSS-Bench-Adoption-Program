@@ -6,11 +6,11 @@ Bench scenes, one real photograph per area (plaques are drawn on top):
 - `scenes/willow-lake.jpg` — Michael Bitter, https://www.pexels.com/photo/serene-lakeside-view-with-bench-in-braunschweig-38221332/ (cropped)
 - `scenes/athletic-fields.jpg` — https://www.pexels.com/photo/cozy-park-bench-in-serene-outdoor-setting-33393597/
 - `scenes/playground.jpg` — Kadir Emir, https://www.pexels.com/photo/empty-park-bench-in-sunlit-garden-setting-34355774/
-- `scenes/community-garden.jpg` — Mike Bird, https://www.pexels.com/photo/brown-wooden-bench-130987/
-- `scenes/picnic-groves.jpg` — Rabialogy, https://www.pexels.com/photo/brown-wooden-bench-near-green-plants-8635051/ (cropped)
+- `scenes/community-garden.jpg` — Simge Tek, https://www.pexels.com/photo/bench-in-a-garden-17158019/ (cropped)
+- `scenes/picnic-groves.jpg` — Omar Castro, https://www.pexels.com/photo/an-empty-bench-in-a-park-19759589/ (cropped)
 - `scenes/north-woods.jpg` — Elliott Blair, https://unsplash.com/photos/OBP_KLYsXbc
 - `scenes/old-oak-grove.jpg` — Kadir Emir, https://www.pexels.com/photo/empty-wooden-park-bench-in-a-serene-setting-29506905/
-- `scenes/hilltop-overlook.jpg` — Cengizhan Ozturk, https://www.pexels.com/photo/serene-lakeside-bench-under-a-majestic-tree-38527813/ (cropped)
+- `scenes/hilltop-overlook.jpg` — Fidan Nazim Qizi, https://www.pexels.com/photo/scenic-park-bench-under-tree-canopy-in-summer-33626486/ (cropped)
 
 All under the Pexels / Unsplash licenses.
 

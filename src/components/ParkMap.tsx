@@ -123,7 +123,7 @@ export default function ParkMap({
     if (!map || !ready) return;
     if (focusBench) {
       const b = benches.find((x) => x.id === focusBench);
-      if (b) map.flyTo({ center: toLngLat([b.pos_x, b.pos_y]), zoom: 18.6, pitch: 55, bearing: -20, ...EASE });
+      if (b) map.flyTo({ center: toLngLat([b.pos_x, b.pos_y]), zoom: 19, pitch: 60, bearing: -25, duration: 1100, essential: true });
       return;
     }
     if (focusArea) {
@@ -184,14 +184,8 @@ export default function ParkMap({
       const f = e.features?.[0];
       if (!f) return;
       if (f.layer.id === "benches") {
-        // dive onto the bench, then hand over to the bench page
-        const b = benches.find((x) => x.id === f.properties.id);
-        const map = mapRef.current;
-        if (b && map) {
-          setHoverBench(null);
-          map.flyTo({ center: toLngLat([b.pos_x, b.pos_y]), zoom: 19, pitch: 60, bearing: -25, duration: 1100, essential: true });
-          window.setTimeout(() => onSelectBench?.(b.id), 950);
-        } else onSelectBench?.(f.properties.id as string);
+        setHoverBench(null);
+        onSelectBench?.(f.properties.id as string); // the parent sets focusBench, which flies the camera
       } else if (f.layer.id === "lawns" && areasClickable) onSelectArea?.(f.properties.area as string);
     },
     [areasClickable, benches, onSelectArea, onSelectBench],
