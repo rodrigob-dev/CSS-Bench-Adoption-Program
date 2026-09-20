@@ -132,19 +132,24 @@ ${rateCase}
   cross join (values ('A'), ('B')) as s (side)
   where s.side = 'A' or b.size_ft = 8
 )
-insert into adoptions (bench_id, side, kind, donor_name, plaque_text, amount_usd, adopted_at, term_years, status)
+insert into adoptions (bench_id, side, kind, donor_name, donor_email, honoree_name, plaque_text,
+                       timeline_acknowledged, amount_usd, adopted_at, term_years, status)
 -- older, already-expired adoptions (history) on ~8% of sides
-select bench_id, side, 'adopt', donor_b, replace(plaque_b, '{name}', donor_b), 2500,
+select bench_id, side, 'adopt', donor_b, lower(replace(donor_b, ' ', '.')) || '@example.com', null,
+       replace(plaque_b, '{name}', donor_b), true, 2500,
        now() - interval '14 years' - (r_age * interval '6 years'), 10, 'expired'
 from sides where installed and r_history < 0.08
 union all
 -- current adoptions at the area's rate, dated 0-12 years ago (some already lapsed)
-select bench_id, side, 'adopt', donor_a, replace(plaque_a, '{name}', donor_a), 3500,
+select bench_id, side, 'adopt', donor_a, lower(replace(donor_a, ' ', '.')) || '@example.com',
+       case when r_history < 0.5 then donor_b end,           -- half are in honor/memory of someone
+       replace(plaque_a, '{name}', case when r_history < 0.5 then donor_b else donor_a end), true, 3500,
        now() - (r_age * interval '12 years'), 10, 'active'
 from sides where installed and r_active < adopt_rate
 union all
 -- three install slots already taken (side A only until installed)
-select bench_id, side, 'install_and_adopt', donor_a, replace(plaque_a, '{name}', donor_a), 5500,
+select bench_id, side, 'install_and_adopt', donor_a, lower(replace(donor_a, ' ', '.')) || '@example.com', donor_b,
+       replace(plaque_a, '{name}', donor_b), true, 5500,
        now() - (r_age * interval '2 years'), 10, 'active'
 from sides where not installed and side = 'A' and bench_id in ('GL-SLOT-02', 'GL-SLOT-05', 'GL-SLOT-09');
 `);

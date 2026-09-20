@@ -2,6 +2,7 @@
 -- Run in the Supabase SQL editor (or: psql "$DATABASE_URL" -f supabase/schema.sql).
 -- Re-runnable: drops everything first.
 drop function if exists adopt_bench(text, text, text, text);
+drop function if exists adopt_bench(text, text, text, text, text, text, text, boolean);
 drop view if exists area_summary;
 drop view if exists bench_sides;
 drop table if exists adoptions;
@@ -48,11 +49,17 @@ create table adoptions (
   bench_id    text not null references benches (id),
   side        text not null check (side in ('A', 'B')),
   kind        text not null check (kind in ('adopt', 'install_and_adopt')),
+  -- the fields of VCPA's adoption form, minus payment
   donor_name  text not null check (length(trim(donor_name)) between 1 and 80),
+  donor_email text not null check (donor_email ~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'),
+  honoree_name text check (length(honoree_name) <= 120),           -- "in honor or in memory of"
   plaque_text text not null check (
-    length(plaque_text) between 1 and 400
+    length(plaque_text) between 1 and 300                            -- VCPA: max 300 characters
     and array_length(string_to_array(plaque_text, E'\n'), 1) <= 7   -- VCPA: max 7 lines
   ),
+  notes       text check (length(notes) <= 1000),                   -- "any additional questions?"
+  timeline_acknowledged boolean not null check (timeline_acknowledged), -- "I understand the 6-8 week timeline"
+
   amount_usd  int not null check (amount_usd > 0),
   adopted_at  timestamptz not null default now(),
   term_years  int not null default 10 check (term_years > 0),      -- VCPA term is 10 years
@@ -90,6 +97,7 @@ select
   a.id        as adoption_id,
   a.kind,
   a.donor_name,
+  a.honoree_name,
   a.plaque_text,
   a.amount_usd,
   a.adopted_at,
@@ -129,10 +137,14 @@ group by ar.id;
 --      "someone just adopted this bench".
 -- ---------------------------------------------------------------------------
 create or replace function adopt_bench(
-  p_bench_id    text,
-  p_side        text,
-  p_donor_name  text,
-  p_plaque_text text
+  p_bench_id     text,
+  p_side         text,
+  p_donor_name   text,
+  p_donor_email  text,
+  p_plaque_text  text,
+  p_honoree_name text default null,
+  p_notes        text default null,
+  p_timeline_ack boolean default false
 ) returns adoptions
 language plpgsql
 as $$
@@ -155,13 +167,18 @@ begin
      and status = 'active'
      and adopted_at + make_interval(years => term_years) <= now();
 
-  insert into adoptions (bench_id, side, kind, donor_name, plaque_text, amount_usd)
+  insert into adoptions (bench_id, side, kind, donor_name, donor_email, honoree_name,
+                         plaque_text, notes, timeline_acknowledged, amount_usd)
   values (
     p_bench_id,
     p_side,
     case when v_bench.installed then 'adopt' else 'install_and_adopt' end,
     trim(p_donor_name),
+    lower(trim(p_donor_email)),
+    nullif(trim(p_honoree_name), ''),
     trim(p_plaque_text),
+    nullif(trim(p_notes), ''),
+    p_timeline_ack,
     case when v_bench.installed then 3500 else 5500 end
   )
   returning * into v_row;

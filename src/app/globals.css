@@ -1,55 +1,88 @@
 @import "tailwindcss";
 
+/* Palette lifted from centralparknyc.org: forest green, lime accent, navy, warm greys. */
 :root {
-  --background: #f7f8f5;
-  --foreground: #1b2620;
+  --background: #ffffff;
+  --foreground: #1e1e1e;
+  --forest: #286140;
+  --forest-deep: #1d4a30;
+  --lime: #79c000;
+  --lime-soft: #c8e379;
+  --navy: #002e5d;
+  --sand: #f4f3ee;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-lime: var(--lime);
+  --color-lime-soft: var(--lime-soft);
+  --color-navy: var(--navy);
+  --color-sand: var(--sand);
+  --color-ink: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-body), "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Leaflet needs an explicit height on its container. */
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  font: inherit;
+h1, h2, h3, .font-display {
+  font-family: var(--font-display), "Arial Narrow", Arial, sans-serif;
 }
 
-/* Area labels drawn on the map as permanent tooltips. */
-.leaflet-tooltip.area-label {
-  white-space: normal;
-  max-width: 96px;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  padding: 0;
-  text-align: center;
-  pointer-events: none;
+
+
+/* Cast-bronze plaque: brushed surface, bevelled rim, engraved text. */
+.plaque {
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(94deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 3px),
+    linear-gradient(168deg, #b8925a 0%, #8f6b35 38%, #7a5a2b 62%, #9a7640 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 200, 0.35),
+    inset 0 0 0 2px rgba(60, 40, 10, 0.55),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.25),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.35),
+    0 2px 3px rgba(0, 0, 0, 0.55),
+    0 6px 10px rgba(0, 0, 0, 0.25);
 }
-.leaflet-tooltip.area-label::before {
-  display: none;
+.plaque-screw {
+  position: absolute;
+  width: 5%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d9c08a, #6d5227 70%, #3d2c12);
+  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.6), inset 0 0 0 0.5px rgba(0, 0, 0, 0.4);
 }
-.area-label__name {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.15;
-  color: #0f172a;
-  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 6px #fff;
+.plaque-text {
+  font-family: var(--font-plaque), "EB Garamond", Garamond, "Times New Roman", serif;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  color: #2a1c08;
+  text-shadow: 0 1px 0 rgba(255, 235, 190, 0.45), 0 -0.5px 0 rgba(0, 0, 0, 0.35);
 }
-.area-label__count {
-  display: block;
-  font-size: 10px;
-  color: #1e3a8a;
-  text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+.plaque-editing {
+  box-shadow:
+    0 0 0 3px rgba(121, 192, 0, 0.85),
+    inset 0 0 0 1px rgba(255, 240, 200, 0.35),
+    inset 0 0 0 2px rgba(60, 40, 10, 0.55),
+    0 6px 12px rgba(0, 0, 0, 0.45);
+}
+@keyframes plaque-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+}
+.plaque-ghost {
+  animation: plaque-pulse 2.4s ease-in-out infinite;
+}
+.plaque-ghost .plaque-text {
+  color: #fff3d6;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
 }

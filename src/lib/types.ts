@@ -29,6 +29,7 @@ export type BenchSide = {
   adoption_id: string | null;
   kind: AdoptionKind | null;
   donor_name: string | null;
+  honoree_name: string | null;
   plaque_text: string | null;
   amount_usd: number | null;
   adopted_at: string | null;
@@ -53,7 +54,7 @@ export type Bench = {
 
 export const PRICE_USD = { adopt: 3500, install_and_adopt: 5500 } as const;
 export const MAX_PLAQUE_LINES = 7;
-export const MAX_PLAQUE_CHARS = 400;
+export const MAX_PLAQUE_CHARS = 300;
 
 export const STYLE_LABEL: Record<BenchStyle, string> = {
   worlds_fair: "World's Fair",

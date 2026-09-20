@@ -33,7 +33,9 @@ const results = await Promise.all(
       p_bench_id: target.bench_id,
       p_side: target.side,
       p_donor_name: `Racer ${i + 1}`,
+      p_donor_email: `racer${i + 1}@example.com`,
       p_plaque_text: `Racer ${i + 1} was here`,
+      p_timeline_ack: true,
     }),
   ),
 );

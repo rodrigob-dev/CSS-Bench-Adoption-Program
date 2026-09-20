@@ -6,13 +6,13 @@ import { getBalance } from "@/lib/wallet";
 export async function Wallet() {
   const balance = await getBalance();
   return (
-    <form action={addFunds} className="flex items-center gap-3 text-sm">
-      <span className="text-emerald-900/70">
-        Wallet <span className="font-mono font-semibold text-emerald-900">{formatUsd(balance)}</span>
+    <form action={addFunds} className="flex items-center gap-2 text-sm">
+      <span className="hidden text-ink/60 sm:inline">
+        Demo wallet <span className="font-semibold text-ink">{formatUsd(balance)}</span>
       </span>
       <button
         type="submit"
-        className="rounded-md border border-emerald-700 px-3 py-1.5 font-medium text-emerald-800 hover:bg-emerald-50"
+        className="rounded-full border border-forest px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-forest hover:bg-forest hover:text-white"
         title="Demo only — no real payment"
       >
         + $10,000

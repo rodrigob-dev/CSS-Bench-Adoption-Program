@@ -20,6 +20,10 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
   const benchId = String(formData.get("bench_id") ?? "");
   const side = String(formData.get("side") ?? "");
   const donorName = String(formData.get("donor_name") ?? "").trim();
+  const donorEmail = String(formData.get("donor_email") ?? "").trim();
+  const honoreeName = String(formData.get("honoree_name") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const timelineAck = formData.get("timeline_ack") === "on";
   const plaqueText = String(formData.get("plaque_text") ?? "")
     .replace(/\r\n/g, "\n")
     .trim();
@@ -30,6 +34,10 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
   if (!donorName || donorName.length > 80) {
     return { error: "Donor name is required (max 80 characters)." };
   }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(donorEmail)) return { error: "A valid email address is required." };
+  if (honoreeName.length > 120) return { error: "Honoree name is too long (max 120 characters)." };
+  if (notes.length > 1000) return { error: "Additional questions are too long (max 1000 characters)." };
+  if (!timelineAck) return { error: "Please confirm you understand the 6–8 week timeline." };
   if (!plaqueText) return { error: "Plaque text is required." };
   if (plaqueText.split("\n").length > MAX_PLAQUE_LINES) {
     return { error: `Plaque text can have at most ${MAX_PLAQUE_LINES} lines.` };
@@ -57,7 +65,11 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
     p_bench_id: benchId,
     p_side: side,
     p_donor_name: donorName,
+    p_donor_email: donorEmail,
     p_plaque_text: plaqueText,
+    p_honoree_name: honoreeName || null,
+    p_notes: notes || null,
+    p_timeline_ack: timelineAck,
   });
 
   if (error) {

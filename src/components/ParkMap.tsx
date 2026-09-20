@@ -1,168 +1,307 @@
 "use client";
 
-import { CRS, type LatLngBoundsExpression, type LatLngTuple } from "leaflet";
-import { useRouter } from "next/navigation";
-import { CircleMarker, MapContainer, Polygon, Polyline, Rectangle, Tooltip } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import { PARK, polygonBounds, type XY } from "@/lib/park";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import MapGL, { Layer, Marker, Popup, Source, type MapRef } from "react-map-gl/maplibre";
+import type { Map as MapLibreMap, MapLayerMouseEvent, MapLibreEvent } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { buildBasemap, STREETS } from "@/lib/basemap";
+import { bboxOf, centroid, toLngLat } from "@/lib/geo";
+import { PARK } from "@/lib/park";
 import type { AreaSummary, Bench } from "@/lib/types";
-import { PIN, STATUS_LABEL } from "./status";
-
-/** Park coordinates are (x, y); Leaflet's CRS.Simple wants [y, x]. */
-const ll = ([x, y]: XY): LatLngTuple => [y, x];
-const llPath = (p: XY[]) => p.map(ll);
-const PARK_BOUNDS: LatLngBoundsExpression = [[0, 0], [PARK.height, PARK.width]];
+import { STATUS_LABEL } from "./status";
 
 type Props = {
   benches: Bench[];
   areas: AreaSummary[];
-  /** Area to frame; omit to show the whole park. */
-  focusArea?: string;
-  /** Bench to frame and highlight. */
+  /** Area to frame (animated); undefined = whole park. */
+  focusArea?: string | null;
+  /** Bench to frame and ring. */
   focusBench?: string;
   hoveredArea?: string | null;
   onHoverArea?: (id: string | null) => void;
-  /** Whether area zones are clickable (home) or just outlines (area/bench pages). */
+  onSelectArea?: (id: string) => void;
+  onSelectBench?: (id: string) => void;
   areasClickable?: boolean;
 };
 
-/**
- * Schematic park map. Every bench is a pin: blue = open, hollow = one side
- * open, grey = adopted, dashed = pre-approved spot for a new bench.
- */
-export default function ParkMap({
-  benches,
-  areas,
-  focusArea,
-  focusBench,
-  hoveredArea = null,
-  onHoverArea,
-  areasClickable = false,
-}: Props) {
-  const router = useRouter();
-  const byId = new Map(areas.map((a) => [a.id, a]));
+const PARK_BBOX = bboxOf([[0, 0], [PARK.width, PARK.height]]);
+const CITY = bboxOf([[-700, -520], [1700, 1250]]);
+const CITY_BBOX: [number, number, number, number] = [CITY[0][0], CITY[0][1], CITY[1][0], CITY[1][1]];
+const EASE = { duration: 1600, essential: true } as const;
+const BASE_STYLE = {
+  version: 8 as const,
+  sources: {},
+  layers: [{ id: "bg", type: "background" as const, paint: { "background-color": "#eef0e9" } }],
+};
 
-  let bounds: LatLngBoundsExpression = PARK_BOUNDS;
-  if (focusBench) {
-    const b = benches.find((x) => x.id === focusBench);
-    if (b) bounds = [[b.pos_y - 70, b.pos_x - 110], [b.pos_y + 70, b.pos_x + 110]];
-  } else if (focusArea) {
-    const area = PARK.areas.find((a) => a.id === focusArea);
-    if (area) {
-      const [[x0, y0], [x1, y1]] = polygonBounds(area.polygon);
-      bounds = [[y0 - 15, x0 - 15], [y1 + 15, x1 + 15]];
-    }
+/** Bench pin icons drawn on a canvas so the symbol layer needs no sprite. */
+function makeIcons(map: MapLibreMap) {
+  const size = 44, r = 15, c = size / 2;
+  const draw = (fn: (ctx: CanvasRenderingContext2D) => void) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    fn(ctx);
+    return ctx.getImageData(0, 0, size, size);
+  };
+  const disc = (ctx: CanvasRenderingContext2D, fill: string, stroke: string, dashed = false) => {
+    ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2);
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+    ctx.beginPath(); ctx.arc(c, c, r - 3, 0, Math.PI * 2);
+    ctx.lineWidth = 3; ctx.strokeStyle = stroke; if (dashed) ctx.setLineDash([4, 3]); ctx.stroke();
+  };
+  const icons: Record<string, ImageData> = {
+    open: draw((ctx) => disc(ctx, "#2563eb", "#1e40af")),
+    partial: draw((ctx) => {
+      disc(ctx, "#ffffff", "#1e40af");
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, c, size); ctx.clip();
+      ctx.beginPath(); ctx.arc(c, c, r - 4, 0, Math.PI * 2); ctx.fillStyle = "#2563eb"; ctx.fill(); ctx.restore();
+    }),
+    full: draw((ctx) => disc(ctx, "#9ca3af", "#6b7280")),
+    slot: draw((ctx) => disc(ctx, "#ffffff", "#1e40af", true)),
+    "slot-full": draw((ctx) => disc(ctx, "#e5e7eb", "#6b7280", true)),
+  };
+  for (const [name, data] of Object.entries(icons)) {
+    if (!map.hasImage(name)) map.addImage(name, data, { pixelRatio: 2 });
   }
+}
+
+export default function ParkMap({
+  benches, areas, focusArea = null, focusBench, hoveredArea = null,
+  onHoverArea, onSelectArea, onSelectBench, areasClickable = false,
+}: Props) {
+  const mapRef = useRef<MapRef>(null);
+  const [ready, setReady] = useState(false);
+  const [hoverBench, setHoverBench] = useState<Bench | null>(null);
+  const basemap = useMemo(() => buildBasemap(), []);
+  const byId = useMemo(() => new Map(areas.map((a) => [a.id, a])), [areas]);
+
+  const benchGeo = useMemo(
+    () => ({
+      type: "FeatureCollection" as const,
+      features: benches.map((b) => ({
+        type: "Feature" as const,
+        id: b.id,
+        properties: {
+          id: b.id,
+          area_id: b.area_id,
+          status: b.status,
+          icon: b.installed ? b.status : b.status === "full" ? "slot-full" : "slot",
+          open: b.status !== "full",
+        },
+        geometry: { type: "Point" as const, coordinates: toLngLat([b.pos_x, b.pos_y]) },
+      })),
+    }),
+    [benches],
+  );
+
+  // camera --------------------------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    if (focusBench) {
+      const b = benches.find((x) => x.id === focusBench);
+      if (b) map.flyTo({ center: toLngLat([b.pos_x, b.pos_y]), zoom: 18.6, pitch: 55, bearing: -20, ...EASE });
+      return;
+    }
+    if (focusArea) {
+      const area = PARK.areas.find((a) => a.id === focusArea);
+      if (area) map.fitBounds(bboxOf(area.polygon), { padding: 48, pitch: 48, bearing: -12, ...EASE });
+      return;
+    }
+    map.fitBounds(PARK_BBOX, { padding: 24, pitch: 0, bearing: 0, ...EASE });
+  }, [focusArea, focusBench, ready, benches]);
+
+  // pulse the open benches of the focused area --------------------------
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !ready || !focusArea || focusBench) return;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const k = (Math.sin((t - t0) / 380) + 1) / 2; // 0..1
+      if (map.getLayer("bench-pulse")) {
+        map.setPaintProperty("bench-pulse", "circle-radius", 10 + k * 10);
+        map.setPaintProperty("bench-pulse", "circle-opacity", 0.45 - k * 0.4);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [focusArea, focusBench, ready]);
+
+  // interaction ---------------------------------------------------------
+  const onLoad = useCallback((e: MapLibreEvent) => {
+    makeIcons(e.target);
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __parkMap?: MapLibreMap }).__parkMap = e.target;
+    setReady(true);
+  }, []);
+
+  const onMouseMove = useCallback(
+    (e: MapLayerMouseEvent) => {
+      const f = e.features?.[0];
+      const map = mapRef.current?.getMap();
+      if (map) map.getCanvas().style.cursor = f ? "pointer" : "";
+      if (f?.layer.id === "benches") {
+        setHoverBench(benches.find((b) => b.id === f.properties.id) ?? null);
+        onHoverArea?.(null);
+      } else {
+        setHoverBench(null);
+        onHoverArea?.(f?.layer.id === "lawns" ? (f.properties.area as string) : null);
+      }
+    },
+    [benches, onHoverArea],
+  );
+
+  const onClick = useCallback(
+    (e: MapLayerMouseEvent) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      if (f.layer.id === "benches") onSelectBench?.(f.properties.id as string);
+      else if (f.layer.id === "lawns" && areasClickable) onSelectArea?.(f.properties.area as string);
+    },
+    [areasClickable, onSelectArea, onSelectBench],
+  );
+
+  const showLabels = !focusBench;
+  const dimOthers = Boolean(focusArea) && !focusBench;
 
   return (
-    <MapContainer
-      crs={CRS.Simple}
-      bounds={bounds}
-      boundsOptions={{ padding: [10, 10] }}
-      maxBounds={[[-40, -40], [PARK.height + 40, PARK.width + 40]]}
-      maxBoundsViscosity={1}
-      minZoom={-1}
-      maxZoom={3}
-      zoomSnap={0}
-      zoomDelta={0.5}
-      scrollWheelZoom={false}
+    <MapGL
+      ref={mapRef}
+      initialViewState={{ bounds: PARK_BBOX, fitBoundsOptions: { padding: 24 } }}
+      mapStyle={BASE_STYLE}
+      maxBounds={CITY_BBOX}
+      minZoom={13.5}
+      maxZoom={19.5}
       attributionControl={false}
-      preferCanvas
-      className="h-full w-full"
-      style={{ background: "#dfe9d6" }}
+      interactiveLayerIds={ready ? ["benches", ...(areasClickable ? ["lawns"] : [])] : []}
+      onLoad={onLoad}
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => { setHoverBench(null); onHoverArea?.(null); }}
+      onClick={onClick}
+      style={{ width: "100%", height: "100%" }}
     >
-      {/* ground */}
-      <Rectangle bounds={PARK_BOUNDS} pathOptions={{ color: "#a7b99a", weight: 2, fillColor: "#e7efdf", fillOpacity: 1 }} interactive={false} />
+      {/* city */}
+      <Source id="ground" type="geojson" data={basemap.ground}><Layer id="ground" type="fill" paint={{ "fill-color": "#f1efe9" }} /></Source>
+      <Source id="blocks" type="geojson" data={basemap.blocks}><Layer id="blocks" type="fill" paint={{ "fill-color": "#e8e6df" }} /></Source>
+      <Source id="buildings" type="geojson" data={basemap.buildings}>
+        <Layer id="buildings" type="fill" paint={{ "fill-color": "#dedbd2", "fill-outline-color": "#cfcbc0" }} />
+      </Source>
+      <Source id="roads" type="geojson" data={basemap.roads}>
+        <Layer id="roads-casing" type="line" paint={{ "line-color": "#d6d2c8", "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 14, 3, 18, 22] }} layout={{ "line-cap": "round" }} />
+        <Layer id="roads" type="line" paint={{ "line-color": ["case", ["get", "major"], "#fdf3d0", "#ffffff"], "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 14, 2, 18, 18] }} layout={{ "line-cap": "round" }} />
+      </Source>
 
-      {/* area zones */}
-      {PARK.areas.map((a) => {
-        const active = hoveredArea === a.id;
-        const dim = focusArea && focusArea !== a.id;
-        return (
-          <Polygon
-            key={a.id}
-            positions={llPath(a.polygon)}
-            pathOptions={{
-              color: active ? "#1e40af" : "#8fa385",
-              weight: active ? 2.5 : 1,
-              dashArray: active ? undefined : "4 4",
-              fillColor: active ? "#bfdbfe" : "#f3f7ee",
-              fillOpacity: dim ? 0.2 : active ? 0.55 : 0.7,
-            }}
-            interactive={areasClickable}
-            eventHandlers={
-              areasClickable
-                ? {
-                    click: () => router.push(`/areas/${a.id}`),
-                    mouseover: () => onHoverArea?.(a.id),
-                    mouseout: () => onHoverArea?.(null),
-                  }
-                : undefined
-            }
-          >
-            {!focusBench && (
-              <Tooltip permanent direction="center" className="area-label" interactive={false}>
-                <span className="area-label__name">{a.short}</span>
-                {byId.get(a.id) && (
-                  <span className="area-label__count">{byId.get(a.id)!.sides_open} open</span>
-                )}
-              </Tooltip>
-            )}
-          </Polygon>
-        );
-      })}
-
-      {/* lake */}
-      <Polygon positions={llPath(PARK.lake)} pathOptions={{ color: "#7fb0d8", weight: 1.5, fillColor: "#b7d4ec", fillOpacity: 1 }} interactive={false} />
-
-      {/* paths */}
-      {PARK.mainPaths.map((p, i) => (
-        <Polyline key={`m${i}`} positions={llPath(p)} pathOptions={{ color: "#d6cbb3", weight: 6, lineCap: "round" }} interactive={false} />
-      ))}
-      {PARK.areas.flatMap((a) =>
-        a.paths.map((p, i) => (
-          <Polyline key={`${a.id}${i}`} positions={llPath(p)} pathOptions={{ color: "#d6cbb3", weight: 3.5, lineCap: "round" }} interactive={false} />
-        )),
-      )}
+      {/* park */}
+      <Source id="park" type="geojson" data={basemap.park}>
+        <Layer id="park" type="fill" paint={{ "fill-color": "#d5e8c8", "fill-outline-color": "#b4cca5" }} />
+      </Source>
+      <Source id="lawns" type="geojson" data={basemap.lawns}>
+        <Layer
+          id="lawns"
+          type="fill"
+          paint={{
+            "fill-color": ["case", ["==", ["get", "area"], hoveredArea ?? ""], "#c7dcff", ["==", ["get", "area"], focusArea ?? ""], "#e6f2da", "#deedd0"],
+            "fill-opacity": dimOthers ? ["case", ["==", ["get", "area"], focusArea ?? ""], 1, 0.55] : 1,
+          }}
+        />
+        <Layer id="lawns-outline" type="line" paint={{ "line-color": "#9fbb8f", "line-width": 1.2, "line-dasharray": [3, 2] }} />
+      </Source>
+      <Source id="water" type="geojson" data={basemap.water}>
+        <Layer id="water" type="fill" paint={{ "fill-color": "#b9d8f2", "fill-outline-color": "#93bde3" }} />
+      </Source>
+      <Source id="paths" type="geojson" data={basemap.paths}>
+        <Layer id="paths-casing" type="line" paint={{ "line-color": "#c9b993", "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 14, 2.5, 18, 14] }} layout={{ "line-cap": "round", "line-join": "round" }} />
+        <Layer id="paths" type="line" paint={{ "line-color": "#f4ecd8", "line-width": ["interpolate", ["exponential", 1.6], ["zoom"], 14, 1.2, 18, 10] }} layout={{ "line-cap": "round", "line-join": "round" }} />
+      </Source>
+      <Source id="trees" type="geojson" data={basemap.trees}>
+        <Layer
+          id="trees"
+          type="circle"
+          paint={{
+            "circle-color": "#9ccc86",
+            "circle-stroke-color": "#7fb069",
+            "circle-stroke-width": 1,
+            "circle-opacity": 0.9,
+            "circle-radius": ["interpolate", ["exponential", 2], ["zoom"], 14, ["/", ["get", "r"], 7.2], 19, ["/", ["get", "r"], 0.22]],
+          }}
+        />
+      </Source>
 
       {/* benches */}
-      {benches.map((b) => {
-        const selected = b.id === focusBench;
-        const pin = PIN[b.status];
-        const dim = focusArea && b.area_id !== focusArea;
-        return (
-          <CircleMarker
-            key={b.id}
-            center={[b.pos_y, b.pos_x]}
-            radius={selected ? 9 : focusArea || focusBench ? 6.5 : 4.5}
-            pathOptions={{
-              color: selected ? "#111827" : pin.color,
-              fillColor: pin.fillColor,
-              fillOpacity: dim ? 0.3 : 1,
-              opacity: dim ? 0.3 : 1,
-              weight: selected ? 3 : b.installed ? 1.5 : 2,
-              dashArray: b.installed ? undefined : "2 2",
+      <Source id="benches" type="geojson" data={benchGeo}>
+        {focusArea && !focusBench && (
+          <Layer
+            id="bench-pulse"
+            type="circle"
+            filter={["all", ["==", ["get", "area_id"], focusArea], ["get", "open"]]}
+            paint={{ "circle-color": "#3b82f6", "circle-radius": 12, "circle-opacity": 0.3, "circle-blur": 0.6 }}
+          />
+        )}
+        {focusBench && (
+          <Layer
+            id="bench-ring"
+            type="circle"
+            filter={["==", ["get", "id"], focusBench]}
+            paint={{ "circle-color": "#111827", "circle-opacity": 0, "circle-radius": 18, "circle-stroke-color": "#111827", "circle-stroke-width": 3 }}
+          />
+        )}
+        {ready && (
+          <Layer
+            id="benches"
+            type="symbol"
+            layout={{
+              "icon-image": ["get", "icon"],
+              "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.32, 16, 0.55, 18, 0.95],
+              "icon-allow-overlap": true,
+              "icon-ignore-placement": true,
             }}
-            eventHandlers={{ click: () => router.push(`/benches/${b.id}`) }}
-          >
-            <Tooltip direction="top" offset={[0, -6]} opacity={1}>
-              <div className="text-xs">
-                <div className="font-mono font-semibold">{b.id}</div>
-                <div>
-                  {b.installed ? `${b.size_ft} ft · ${STATUS_LABEL[b.status]}` : `New bench spot · ${STATUS_LABEL[b.status]}`}
-                </div>
-                {b.sides
-                  .filter((s) => s.side_status === "adopted")
-                  .map((s) => (
-                    <div key={s.side} className="text-gray-600">
-                      Side {s.side}: {s.donor_name}
-                    </div>
-                  ))}
+            paint={{ "icon-opacity": dimOthers ? ["case", ["==", ["get", "area_id"], focusArea ?? ""], 1, 0.3] : 1 }}
+          />
+        )}
+      </Source>
+
+      {/* labels */}
+      {showLabels &&
+        PARK.areas.map((a) => {
+          const [x, y] = centroid(a.polygon);
+          const [lng, lat] = toLngLat([x, y]);
+          const s = byId.get(a.id);
+          const dim = dimOthers && a.id !== focusArea;
+          return (
+            <Marker key={a.id} longitude={lng} latitude={lat} anchor="center" style={{ pointerEvents: "none" }}>
+              <div className={`text-center leading-tight transition-opacity ${dim ? "opacity-40" : ""}`}>
+                <div className="text-[11px] font-semibold text-emerald-950 [text-shadow:0_0_3px_#fff,0_0_3px_#fff,0_0_6px_#fff]">{a.short}</div>
+                {s && <div className="text-[10px] text-blue-800 [text-shadow:0_0_3px_#fff,0_0_3px_#fff]">{s.sides_open} open</div>}
               </div>
-            </Tooltip>
-          </CircleMarker>
-        );
-      })}
-    </MapContainer>
+            </Marker>
+          );
+        })}
+      {showLabels && !focusArea &&
+        STREETS.map((st) => {
+          const [lng, lat] = toLngLat(st.at);
+          return (
+            <Marker key={st.name} longitude={lng} latitude={lat} anchor="center" style={{ pointerEvents: "none" }}>
+              <div className="whitespace-nowrap text-[9px] uppercase tracking-wider text-gray-500" style={{ transform: st.rotate ? `rotate(${st.rotate}deg)` : undefined }}>
+                {st.name}
+              </div>
+            </Marker>
+          );
+        })}
+
+      {hoverBench && (
+        <Popup longitude={toLngLat([hoverBench.pos_x, hoverBench.pos_y])[0]} latitude={toLngLat([hoverBench.pos_x, hoverBench.pos_y])[1]} anchor="bottom" offset={14} closeButton={false} closeOnClick={false}>
+          <div className="text-xs">
+            <div className="font-mono font-semibold">{hoverBench.id}</div>
+            <div>{hoverBench.installed ? `${hoverBench.size_ft} ft · ${STATUS_LABEL[hoverBench.status]}` : `Spot for a new bench · ${STATUS_LABEL[hoverBench.status]}`}</div>
+            {hoverBench.sides.filter((s) => s.side_status === "adopted").map((s) => (
+              <div key={s.side} className="text-gray-600">{hoverBench.sides.length > 1 ? (s.side === "A" ? "Left" : "Right") : "Plaque"}: {s.donor_name}</div>
+            ))}
+          </div>
+        </Popup>
+      )}
+    </MapGL>
   );
 }

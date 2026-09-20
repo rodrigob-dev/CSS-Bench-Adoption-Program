@@ -1,34 +1,53 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Barlow_Condensed, Barlow_Semi_Condensed, EB_Garamond } from "next/font/google";
 import { Wallet } from "@/components/Wallet";
 import { PARK } from "@/lib/park";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// Central Park Conservancy sets Gotham Condensed / Gotham Narrow. Barlow is the
+// closest open pairing: condensed black for display, semi-condensed for text.
+const display = Barlow_Condensed({ variable: "--font-display", subsets: ["latin"], weight: ["600", "700", "800", "900"] });
+const body = Barlow_Semi_Condensed({ variable: "--font-body", subsets: ["latin"], weight: ["400", "500", "600"] });
+const plaque = EB_Garamond({ variable: "--font-plaque", subsets: ["latin"], weight: ["500", "600"] });
 
 export const metadata: Metadata = {
-  title: `Adopt a Bench — ${PARK.name}`,
-  description: `See which benches in ${PARK.name} are adopted, by whom and for how long — and adopt one yourself.`,
+  title: `Adopt-A-Bench — ${PARK.name}`,
+  description: `Tell your story in ${PARK.name}. See which benches are adopted, by whom and for how long — and adopt one yourself.`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${display.variable} ${body.variable} ${plaque.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <header className="border-b border-emerald-900/10 bg-white">
+        <header className="sticky top-0 z-40 border-b border-black/5 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-            <Link href="/" className="flex items-baseline gap-2">
-              <span className="text-lg font-semibold tracking-tight text-emerald-900">Adopt a Bench</span>
-              <span className="hidden text-sm text-emerald-900/60 sm:inline">{PARK.name}</span>
+            <Link href="/" className="flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-forest text-white">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden><path d="M12 2c-2 4-6 6-6 11a6 6 0 0 0 5 5.9V22h2v-3.1A6 6 0 0 0 18 13c0-5-4-7-6-11z" /></svg>
+              </span>
+              <span className="leading-none">
+                <span className="block font-display text-lg font-extrabold uppercase tracking-wide text-forest">{PARK.name} Alliance</span>
+                <span className="block text-xs font-medium uppercase tracking-widest text-ink/60">Adopt-A-Bench</span>
+              </span>
             </Link>
+            <nav className="hidden items-center gap-6 text-sm font-semibold uppercase tracking-wide text-ink/80 md:flex">
+              <Link href="/" className="hover:text-forest">Program</Link>
+              <Link href="/#faq" className="hover:text-forest">FAQ</Link>
+              <Link href="/map" className="rounded-full bg-lime px-4 py-2 text-ink hover:brightness-95">Find a bench</Link>
+            </nav>
             <Wallet />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
-        <footer className="mx-auto w-full max-w-6xl px-4 py-6 text-xs text-emerald-900/50">
-          {PARK.name} is a fictional park with seed data; a real park would load its surveyed bench inventory. Prices and terms follow the VCPA bench adoption program.
+        <main className="flex-1">{children}</main>
+        <footer className="border-t border-black/5 bg-forest text-white/80">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm">
+            <div>
+              <div className="font-display text-xl font-extrabold uppercase tracking-wide text-white">{PARK.name} Alliance</div>
+              <div className="text-white/60">A fictional park built to simulate the bench adoption service. Prices and terms follow the VCPA program.</div>
+            </div>
+            <div className="text-xs text-white/50">Bench and park photography via Unsplash — see public/bench/CREDITS.md</div>
+          </div>
         </footer>
       </body>
     </html>
