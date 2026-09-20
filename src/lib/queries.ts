@@ -78,15 +78,18 @@ export async function getBench(id: string): Promise<Bench | null> {
   // Which of the live holds on this bench are mine? Compared server-side so
   // the token never leaves the server.
   const token = await getHoldToken();
-  if (token && rows.some((r) => r.side_status === "held")) {
+  if (token && rows.some((r) => r.side_status === "held" || r.side_status === "pending")) {
     const { data: mine } = await supabase
       .from("adoptions")
-      .select("side")
+      .select("side, status, plaque_text")
       .eq("bench_id", id)
-      .eq("status", "held")
+      .in("status", ["held", "pending"])
       .eq("hold_token", token);
-    const mySides = new Set((mine ?? []).map((m) => m.side as string));
-    for (const r of rows) r.held_by_me = r.side_status === "held" && mySides.has(r.side);
+    for (const r of rows) {
+      const m = (mine ?? []).find((x) => x.side === r.side);
+      r.held_by_me = Boolean(m) && (r.side_status === "held" || r.side_status === "pending");
+      if (m?.status === "pending") r.plaque_text = m.plaque_text as string; // only the requester sees their own pending text
+    }
   }
   return groupSides(rows)[0];
 }

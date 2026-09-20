@@ -327,9 +327,9 @@ export default function ParkMap({
           <div className="text-xs">
             <div className="font-mono font-semibold">{hoverBench.id}</div>
             <div>{hoverBench.installed ? `${hoverBench.size_ft} ft · ${STATUS_LABEL[hoverBench.status]}` : `Spot for a new bench · ${STATUS_LABEL[hoverBench.status]}`}</div>
-            {hoverBench.sides.filter((s) => s.side_status === "adopted" || s.side_status === "pending").map((s) => (
+            {hoverBench.sides.filter((s) => s.side_status === "adopted").map((s) => (
               <div key={s.side} className="text-gray-600">
-                {hoverBench.sides.length > 1 ? (s.side === "A" ? "Left" : "Right") : "Plaque"}: {s.donor_name}{s.side_status === "pending" ? " (pending)" : ""}
+                {hoverBench.sides.length > 1 ? (s.side === "A" ? "Left" : "Right") : "Plaque"}: {s.donor_name}
               </div>
             ))}
           </div>

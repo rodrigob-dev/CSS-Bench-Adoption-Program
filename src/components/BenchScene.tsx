@@ -135,11 +135,11 @@ function fitFontSize(text: string, boxW: number, boxH: number): number {
 function Plaque({
   data, centre, size, draft, editing, dim, onClick,
 }: { data: SceneSide; centre: [number, number]; size: [number, number]; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
-  const adopted = data.status === "adopted" || data.status === "pending";
-  const heldByOther = data.status === "held" && !data.mine;
+  const adopted = data.status === "adopted" || (data.status === "pending" && data.mine);
+  const heldByOther = (data.status === "held" && !data.mine) || (data.status === "pending" && !data.mine);
   const text = adopted ? data.plaque_text ?? "" : draft;
   const ghost = !adopted && !heldByOther && !editing && !draft;
-  const label = ghost ? "Your plaque here" : heldByOther ? "Being adopted" : text;
+  const label = ghost ? "Your plaque here" : heldByOther ? "Not available" : text;
 
   const ref = useRef<HTMLButtonElement>(null);
   const [box, setBox] = useState<[number, number]>([120, 40]);
@@ -174,7 +174,7 @@ function Plaque({
       type="button"
       onClick={onClick}
       disabled={adopted || heldByOther}
-      title={data.status === "pending" ? `Adoption by ${data.donor_name} awaiting approval` : adopted ? `Adopted by ${data.donor_name}` : heldByOther ? "Someone is adopting this plaque right now" : "Adopt this plaque"}
+      title={data.status === "pending" ? (data.mine ? "Your request is waiting for approval" : "Not available") : adopted ? `Adopted by ${data.donor_name}` : heldByOther ? "Not available right now" : "Adopt this plaque"}
       className={`plaque absolute flex items-center justify-center overflow-hidden transition-[opacity,box-shadow,filter] duration-500 ${
         adopted ? "cursor-default" : "cursor-pointer"
       } ${ghost ? "plaque-ghost" : ""} ${heldByOther || data.status === "pending" ? "plaque-held" : ""} ${dim ? "opacity-60" : "opacity-100"} ${editing ? "plaque-editing" : ""}`}

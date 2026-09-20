@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { mailRequestReceived } from "@/lib/mail";
 import { ensureHoldToken, getHoldToken } from "@/lib/session";
 import { getBalance, setBalance } from "@/lib/wallet";
 import { formatUsd } from "@/lib/format";
@@ -100,7 +101,7 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
   // the partial unique index inside this call (SQLSTATE 23505).
   // Converts this browser's hold into the adoption; without a hold it inserts
   // directly and the partial unique index still guarantees at most one.
-  const { error } = await supabase.rpc("adopt_bench", {
+  const { data: row, error } = await supabase.rpc("adopt_bench", {
     p_bench_id: benchId,
     p_side: side,
     p_donor_name: donorName,
@@ -127,6 +128,11 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
   }
 
   await setBalance(balance - price);
+  const benchUrl = `${process.env.SITE_URL ?? ""}/benches/${encodeURIComponent(benchId)}`;
+  await mailRequestReceived(
+    { donor_name: donorName, donor_email: donorEmail, bench_id: benchId, side, plaque_text: plaqueText, amount_usd: (row as { amount_usd?: number })?.amount_usd ?? price, install: !bench.installed },
+    benchUrl,
+  );
   revalidatePath("/", "layout");
   redirect(`/benches/${encodeURIComponent(benchId)}?adopted=${side}`);
 }

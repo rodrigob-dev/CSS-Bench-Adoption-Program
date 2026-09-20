@@ -121,10 +121,11 @@ select
   s.side,
   a.id        as adoption_id,
   a.kind,
-  case when a.status in ('active', 'pending') then a.donor_name end   as donor_name,
-  case when a.status in ('active', 'pending') then a.honoree_name end as honoree_name,
-  case when a.status in ('active', 'pending') then a.plaque_text end  as plaque_text,
-  case when a.status in ('active', 'pending') then a.amount_usd end   as amount_usd,
+  -- only approved adoptions are public; a pending request shows as taken, nothing more
+  case when a.status = 'active' then a.donor_name end   as donor_name,
+  case when a.status = 'active' then a.honoree_name end as honoree_name,
+  case when a.status = 'active' then a.plaque_text end  as plaque_text,
+  case when a.status = 'active' then a.amount_usd end   as amount_usd,
   case when a.status = 'active' then a.adopted_at end   as adopted_at,
   case when a.status = 'active' then a.term_years end   as term_years,
   case when a.status = 'active' then a.adopted_at + make_interval(years => a.term_years) end as expires_at,
@@ -255,7 +256,7 @@ begin
          timeline_acknowledged = p_timeline_ack,
          amount_usd = case when v_bench.installed then 3500 else 5500 end,
          submitted_at = now(),
-         hold_token = null, held_until = null
+         held_until = null                    -- hold_token stays so the requester can recognise their own request
    where bench_id = p_bench_id and side = p_side and status = 'held'
      and p_token is not null and hold_token = p_token
   returning * into v_row;

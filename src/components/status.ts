@@ -24,5 +24,5 @@ export const SIDE_LABEL: Record<"open" | "adopted" | "held" | "pending", string>
   open: "Open",
   adopted: "Adopted",
   held: "Being adopted now",
-  pending: "Pending approval",
+  pending: "Not available",
 };
