@@ -123,7 +123,7 @@ export default function ParkMap({
     if (!map || !ready) return;
     if (focusBench) {
       const b = benches.find((x) => x.id === focusBench);
-      if (b) map.flyTo({ center: toLngLat([b.pos_x, b.pos_y]), zoom: 19, pitch: 60, bearing: -25, duration: 1100, essential: true });
+      if (b) map.flyTo({ center: toLngLat([b.pos_x, b.pos_y]), zoom: 18.2, pitch: 50, bearing: -20, duration: 900, essential: true });
       return;
     }
     if (focusArea) {

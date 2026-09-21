@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Barlow_Condensed, Barlow_Semi_Condensed, EB_Garamond } from "next/font/google";
-import { Wallet } from "@/components/Wallet";
 import { PARK } from "@/lib/park";
 import "./globals.css";
 
@@ -31,12 +30,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="block text-xs font-medium uppercase tracking-widest text-ink/60">Adopt-A-Bench</span>
               </span>
             </Link>
-            <nav className="flex items-center gap-6 text-sm font-semibold uppercase tracking-wide text-ink/80">
-              <Link href="/" className="hidden hover:text-forest md:inline">Program</Link>
-              <Link href="/#faq" className="hidden hover:text-forest md:inline">FAQ</Link>
-              <Link href="/map" className="btn-pop rounded-full bg-lime px-4 py-2 text-ink">Find a bench</Link>
+            <nav className="flex items-center gap-5 text-sm font-semibold uppercase tracking-wide text-ink/80">
+              <Link href="/about" className="hover:text-forest">How it works</Link>
+              <Link href="/" className="btn-pop rounded-full bg-lime px-4 py-2 text-ink">Park map</Link>
             </nav>
-            <Wallet />
           </div>
         </header>
         <main className="flex-1">{children}</main>

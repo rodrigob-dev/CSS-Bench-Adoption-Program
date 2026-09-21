@@ -3,17 +3,16 @@ import { notFound } from "next/navigation";
 import { BenchExperience } from "@/components/BenchExperience";
 import { getArea, getBench } from "@/lib/queries";
 import { priceFor } from "@/lib/types";
-import { getBalance } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ adopted?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ adopted?: string; adopt?: string }> };
 
 export default async function BenchPage({ params, searchParams }: Props) {
-  const [{ id }, { adopted }] = await Promise.all([params, searchParams]);
+  const [{ id }, { adopted, adopt }] = await Promise.all([params, searchParams]);
   const bench = await getBench(id);
   if (!bench) notFound();
-  const [area, balance] = await Promise.all([getArea(bench.area_id), getBalance()]);
+  const area = await getArea(bench.area_id);
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-4 px-4 py-6">
@@ -26,8 +25,8 @@ export default async function BenchPage({ params, searchParams }: Props) {
         bench={bench}
         areaName={area?.name ?? bench.area_id}
         price={priceFor(bench)}
-        balance={balance}
         adoptedJustNow={adopted}
+        startWith={adopt === "A" || adopt === "B" ? adopt : undefined}
       />
     </div>
   );

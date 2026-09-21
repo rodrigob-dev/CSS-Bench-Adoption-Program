@@ -10,7 +10,7 @@ export default async function AreaPage({ params }: { params: Promise<{ id: strin
   const [area, areas, benches] = await Promise.all([getArea(id), getAreas(), getAllBenches()]);
   if (!area) notFound();
   return (
-    <div className="mx-auto max-w-6xl space-y-5 px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-6">
       <h1 className="font-display text-4xl font-extrabold uppercase tracking-tight text-forest">{area.name}</h1>
       <ParkExplorer areas={areas} benches={benches} initialArea={id} />
     </div>

@@ -220,3 +220,24 @@ approved what.
 
 The public demo seeds no adoptions at all, so whoever gets the link can
 adopt a plaque end to end and then approve it in `/admin`.
+
+## 19. Two core functions, two clicks each
+
+The brief names two jobs: see which benches are adopted (by whom, for how
+long) and adopt one. Everything else is secondary, so the first screen is
+the map itself, not a landing page, and both jobs stay within two clicks
+of it:
+
+- **See:** click a pin or a bench in the list. The panel beside the map
+  shows status, donor and term without leaving the page. Hovering a pin
+  already shows the donor. (1 click)
+- **Adopt:** in that panel, "Adopt this plaque" opens the bench page with
+  the form already open and the plaque already held. (2 clicks)
+
+Things removed for this: the marketing landing (moved to /about), the demo
+wallet (an extra "add funds" step for no reason — payment is confirmed by
+staff at review anyway), the fly-then-navigate delays, and half the copy.
+The form asks for what a request needs (plaque text, name, email, the
+timeline acknowledgement); honoree and notes sit under "More options".
+A search box jumps straight to a bench id or an area for people who already
+know where they want to be.

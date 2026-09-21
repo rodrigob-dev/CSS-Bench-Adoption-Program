@@ -5,16 +5,7 @@ import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { mailRequestReceived } from "@/lib/mail";
 import { ensureHoldToken, getHoldToken } from "@/lib/session";
-import { getBalance, setBalance } from "@/lib/wallet";
-import { formatUsd } from "@/lib/format";
 import { MAX_PLAQUE_CHARS, MAX_PLAQUE_LINES, priceFor } from "@/lib/types";
-
-const TOP_UP_USD = 10_000;
-
-export async function addFunds(): Promise<void> {
-  await setBalance((await getBalance()) + TOP_UP_USD);
-  revalidatePath("/", "layout");
-}
 
 export type HoldResult = { until: string | null } | { error: string };
 
@@ -92,10 +83,6 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
   if (!bench) return { error: "Bench not found." };
 
   const price = priceFor(bench);
-  const balance = await getBalance();
-  if (balance < price) {
-    return { error: `This adoption is ${formatUsd(price)}; your wallet has ${formatUsd(balance)}. Add funds first.` };
-  }
 
   // Single write path. A concurrent adoption of the same side is rejected by
   // the partial unique index inside this call (SQLSTATE 23505).
@@ -127,7 +114,6 @@ export async function adoptBench(_prev: AdoptState, formData: FormData): Promise
     }
   }
 
-  await setBalance(balance - price);
   const benchUrl = `${process.env.SITE_URL ?? ""}/benches/${encodeURIComponent(benchId)}`;
   await mailRequestReceived(
     { donor_name: donorName, donor_email: donorEmail, bench_id: benchId, side, plaque_text: plaqueText, amount_usd: (row as { amount_usd?: number })?.amount_usd ?? price, install: !bench.installed },

@@ -9,17 +9,18 @@ park whose benches have all been mapped, so every bench has a position.
 
 ## What it does
 
-- **Every bench on the map.** The home page is a schematic map of the park
-  with all 532 benches as pins: blue = open, hollow = one of two sides open,
-  grey = adopted, dashed = a spot where a new bench can be installed. Hover
-  for donor and status, click to open. Areas group the benches for browsing.
+- **Every bench on the map, on the first screen.** All 532 benches are
+  pins: blue open, half-blue one of two plaques open, grey adopted, dashed a
+  spot for a new bench. Hover shows the donor; click shows status, donor and
+  term in the side panel. Search jumps to a bench id or an area.
 - **Bench page.** Each adoptable *side* shows the donor, the plaque text, the
   adoption date and when the term ends — or an adoption form if it is open.
-- **Adopt.** Click a plaque and it is reserved for you for 10 minutes while
-  you fill in VCPA's form (name, email, honoree, plaque text of up to 7 lines
-  / 300 characters, the 6–8 week acknowledgement). Your text appears on the
-  plaque as you type. Existing bench $3,500, new bench $5,500, 10-year term.
-  There is no payment: a demo wallet in the header adds $10,000 per click.
+- **Adopt in two clicks.** "Adopt this plaque" in the panel opens the bench
+  page with the form open and the plaque held for you for 10 minutes. The
+  form is VCPA's (plaque text up to 7 lines / 300 characters, name, email,
+  the 6–8 week acknowledgement; honoree and notes optional). Your text
+  appears on a photo of the bench as you type. $3,500 for an existing bench,
+  $5,500 for a new one, ten-year term, no payment online.
 - **Install & adopt.** The Great Lawn has 12 pre-approved spots for new
   benches along its edge, shown as dashed pins and their own cards.
 - **Staff queue.** A submission is a *request*: the plaque is held and the
@@ -122,9 +123,9 @@ The short version — each point is expanded in [DECISIONS.md](DECISIONS.md):
    benches along its paths and writes the seed. Rules are stated (per-area
    counts, every 3rd bench concrete, every 4th 4 ft, per-area adoption rates
    from 15% to 60%, `setseed(0.42)`). A real park loads its own records.
-9. **No accounts, no payment.** The wallet is a cookie, not a table — it is a
-   demo affordance, not a domain fact. The pledged amount *is* recorded on the
-   adoption because that is part of the donation record.
+9. **No accounts, no payment.** Payment is confirmed by staff at review,
+   as the program does today. The pledged amount is recorded on the adoption
+   because it is part of the donation record.
 10. **Out of scope:** admin actions (marking a slot installed, cancelling), a
     "my adoptions" page, search. The schema supports the first two as plain
     updates; the UI does not expose them.

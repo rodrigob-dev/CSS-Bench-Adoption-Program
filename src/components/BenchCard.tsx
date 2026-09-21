@@ -26,11 +26,11 @@ export function BenchCard({ bench, onSelect }: Props) {
   const body = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 font-mono font-semibold">
-          <BenchGlyph className={bench.status === "full" ? "text-gray-400" : "text-blue-700"} />
-          {bench.id}
+        <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-mono text-[13px] font-semibold">
+          <BenchGlyph className={`shrink-0 ${bench.status === "full" ? "text-gray-400" : "text-blue-700"}`} />
+          <span className="truncate">{bench.id.replace("GL-SLOT-", "Spot ")}</span>
         </span>
-        <span className="text-xs">{STATUS_LABEL[bench.status]}</span>
+        <span className="shrink-0 text-xs">{STATUS_LABEL[bench.status]}</span>
       </div>
       <div className="mt-0.5 text-xs opacity-70">
         {bench.installed ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]}` : "Spot for a new bench"}

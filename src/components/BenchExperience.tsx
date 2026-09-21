@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { holdPlaque, releaseHold } from "@/app/actions";
 import { AdoptForm } from "./AdoptForm";
 import { BenchScene, type SceneSide } from "./BenchScene";
@@ -13,8 +13,9 @@ type Props = {
   bench: Bench;
   areaName: string;
   price: number;
-  balance: number;
   adoptedJustNow?: string;
+  /** Open the form for this plaque straight away (deep link from the map). */
+  startWith?: Side;
 };
 
 const plaqueName = (bench: Bench, side: Side) => (bench.sides.length === 1 ? "plaque" : side === "A" ? "left plaque" : "right plaque");
@@ -24,7 +25,7 @@ const plaqueName = (bench: Bench, side: Side) => (bench.sides.length === 1 ? "pl
  * action) before the form opens, so two people cannot fill in the same plaque
  * at once; cancelling releases it; submitting converts it into the adoption.
  */
-export function BenchExperience({ bench, areaName, price, balance, adoptedJustNow }: Props) {
+export function BenchExperience({ bench, areaName, price, adoptedJustNow, startWith }: Props) {
   const [editing, setEditing] = useState<Side | null>(null);
   const [holdUntil, setHoldUntil] = useState<string | null>(null); // null while editing = no hold (unmigrated db)
   const [notice, setNotice] = useState<string | null>(null);
@@ -60,6 +61,16 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
     });
   };
 
+  const started = useRef(false);
+  useEffect(() => {
+    if (startWith && !started.current) {
+      started.current = true;
+      const s = bench.sides.find((x) => x.side === startWith);
+      if (s && (s.side_status === "open" || s.held_by_me)) beginAdoption(startWith);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startWith]);
+
   const cancel = (message?: string) => {
     if (editing) start(() => releaseHold(bench.id, editing));
     setEditing(null);
@@ -85,8 +96,8 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
         />
         <p className="mt-2 text-xs text-ink/50">
           {bench.installed
-            ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]} bench. The photo stands in for the real bench; plaques sit where they would on its rail.`
-            : `Pre-approved spot in the ${areaName}. The park installs a new 8 ft World's Fair bench here once it is adopted.`}
+            ? `${bench.size_ft} ft ${STYLE_LABEL[bench.style]} bench. Representative photo.`
+            : `Pre-approved spot: a new 8 ft bench is installed here once adopted.`}
         </p>
       </div>
 
@@ -115,14 +126,11 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
             {holdUntil && (
               <HoldTimer until={holdUntil} onExpire={() => cancel("Your 10-minute reservation ran out. Click the plaque again to start over.")} />
             )}
-            <p className="text-ink/70">
-              Your text appears on the plaque as you type.
-            </p>
+            <p className="text-ink/70">Your text appears on the plaque as you type.</p>
             <AdoptForm
               benchId={bench.id}
               side={editingSide.side}
               price={price}
-              balance={balance}
               install={!bench.installed}
               onPlaqueChange={setDraft}
             />
@@ -132,9 +140,8 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
             <div>
               <h2 className="font-display text-3xl font-extrabold uppercase tracking-wide text-forest">{bench.id}</h2>
               <p className="text-ink/70">
-                {STATUS_LABEL[bench.status]} bench in the{" "}
                 <Link href={`/areas/${bench.area_id}`} className="underline-offset-2 hover:underline">{areaName}</Link>.{" "}
-                {formatUsd(price)} per plaque, 10-year term, fully tax deductible.
+                {formatUsd(price)} a plaque, ten years, tax deductible.
               </p>
             </div>
             <ul className="space-y-3">
@@ -155,7 +162,7 @@ export function BenchExperience({ bench, areaName, price, balance, adoptedJustNo
                         onClick={() => beginAdoption(s.side)}
                         className="mt-2 w-full rounded-full bg-lime px-3 py-2 font-display text-base font-bold uppercase tracking-wide text-ink hover:brightness-95 disabled:opacity-50"
                       >
-                        {pending ? "Reserving…" : s.held_by_me ? "Continue your adoption" : bench.installed ? `Adopt this plaque for ${formatUsd(price)}` : `Install a bench here for ${formatUsd(price)}`}
+                        {pending ? "One moment…" : s.held_by_me ? "Continue" : bench.installed ? "Adopt this plaque" : "Install a bench here"}
                       </button>
                     ) : s.side_status === "pending" ? (
                       <p className="mt-2 text-xs text-amber-800">
