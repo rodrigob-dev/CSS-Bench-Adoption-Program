@@ -28,7 +28,8 @@ type Props = {
 };
 
 type View = "overview" | Side;
-const EASE = "transition-transform duration-[2200ms] ease-[cubic-bezier(0.4,0.02,0.15,1)] will-change-transform";
+const EASE = "transition-transform duration-[2200ms] ease-[cubic-bezier(0.4,0.02,0.15,1)]";
+const EASE_BOX = "transition-[left,top,width,height] duration-[2200ms] ease-[cubic-bezier(0.4,0.02,0.15,1)]";
 
 /**
  * A real photograph of a bench in this kind of area, with the plaques drawn
@@ -69,6 +70,10 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
   const tx = clamp((50 - focus[0]) * camScale);
   const ty = clamp((50 - focus[1]) * camScale - (zoomed ? 8 : 0)); // editing: plaque a little above centre
 
+  /** Where a point of the photo (in %) lands in the frame after the camera transform. */
+  const project = ([x, y]: [number, number]): [number, number] => [50 + (x - 50) * camScale + tx, 50 + (y - 50) * camScale + ty];
+  const projectedSize: [number, number] = [scene.plaqueSize[0] * camScale, scene.plaqueSize[1] * camScale];
+
   const go = (v: View) => {
     setView(v);
     onPickSide?.(v === "overview" ? null : v);
@@ -90,23 +95,24 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
               </span>
             </div>
           )}
-          {sides.map((s) => (
-            <Plaque
-              key={s.side}
-              data={s}
-              centre={anchor(s.side)}
-              size={scene.plaqueSize}
-              draft={editingSide === s.side ? draft : ""}
-              editing={editingSide === s.side}
-              dim={view !== "overview" && view !== s.side}
-              onClick={() => {
-                if (s.status === "adopted" || s.status === "pending" || (s.status === "held" && !s.mine)) return;
-                go(s.side);
-                onPlaqueClick?.(s.side);
-              }}
-            />
-          ))}
         </div>
+        {/* plaques sit outside the scaled photo so their text is laid out at true size and stays sharp */}
+        {sides.map((s) => (
+          <Plaque
+            key={s.side}
+            data={s}
+            centre={project(anchor(s.side))}
+            size={projectedSize}
+            draft={editingSide === s.side ? draft : ""}
+            editing={editingSide === s.side}
+            dim={view !== "overview" && view !== s.side}
+            onClick={() => {
+              if (s.status === "adopted" || s.status === "pending" || (s.status === "held" && !s.mine)) return;
+              go(s.side);
+              onPlaqueClick?.(s.side);
+            }}
+          />
+        ))}
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-3 flex items-center justify-center gap-2 text-sm">
@@ -185,7 +191,7 @@ function Plaque({
       onClick={onClick}
       disabled={adopted || heldByOther}
       title={data.status === "pending" ? (data.mine ? "Your request is waiting for approval" : "Not available") : adopted ? `Adopted by ${data.donor_name}` : heldByOther ? "Not available right now" : "Adopt this plaque"}
-      className={`plaque absolute flex items-center justify-center overflow-hidden transition-[opacity,box-shadow,filter] duration-500 ${
+      className={`plaque absolute flex items-center justify-center overflow-hidden ${EASE_BOX} ${
         adopted ? "cursor-default" : "cursor-pointer"
       } ${ghost ? "plaque-ghost" : ""} ${heldByOther || data.status === "pending" ? "plaque-held" : ""} ${dim ? "opacity-60" : "opacity-100"} ${editing ? "plaque-editing" : ""}`}
       style={{
