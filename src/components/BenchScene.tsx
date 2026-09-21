@@ -39,11 +39,17 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
   const scene = sceneFor(areaId);
   const single = sides.length === 1;
   const [view, setView] = useState<View>(editingSide ?? "overview");
-  const zoomed = editingSide !== null;
-  // when the form is opened from outside (deep link, panel button), follow it
+  // Editing starts with a beat on the whole bench (so you see what you are
+  // adopting), then the camera glides onto the plaque.
+  const [settled, setSettled] = useState(false);
   useEffect(() => {
-    if (editingSide) setView(editingSide);
+    if (!editingSide) { setSettled(false); return; }
+    setView("overview");
+    setSettled(false);
+    const t = window.setTimeout(() => { setView(editingSide); setSettled(true); }, 450);
+    return () => window.clearTimeout(t);
   }, [editingSide]);
+  const zoomed = editingSide !== null && settled;
 
   const anchor = (side: Side) => (single ? scene.plaques.single : scene.plaques[side]);
   const [bx0, by0, bx1, by1] = scene.bench;
