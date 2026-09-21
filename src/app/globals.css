@@ -82,7 +82,6 @@ a {
   font-variant: small-caps;
   letter-spacing: 0.04em;
   color: #2a1c08;
-  text-shadow: 0 1px 0 rgba(255, 235, 190, 0.45), 0 -0.5px 0 rgba(0, 0, 0, 0.35);
 }
 .plaque-editing {
   box-shadow:
@@ -102,13 +101,9 @@ a {
   opacity: 0.75;
   filter: saturate(0.6);
 }
-.plaque-held .plaque-text {
-  color: #fff3d6;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
-}
+.plaque-held .plaque-text,
 .plaque-ghost .plaque-text {
   color: #fff3d6;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
 }
 
 /* Landing-page motion. */

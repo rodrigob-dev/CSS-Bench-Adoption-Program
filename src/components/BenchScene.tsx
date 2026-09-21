@@ -161,24 +161,25 @@ function Plaque({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  // Size the type to the plate by measuring the real glyphs: the largest
-  // font size at which no line spills past the plate and all lines fit its
-  // height. A two-line dedication reads large, seven lines read small.
+  // Size the type to the plate by measuring the real glyphs: lay the text out
+  // at a fixed base size, then scale it so no line spills past the plate and
+  // all lines fit its height. A two-line dedication reads large, seven lines
+  // read small. Scaling (rather than tiny font sizes) keeps the glyphs crisp
+  // under the camera zoom and never hits the browser's minimum font size.
   const preRef = useRef<HTMLPreElement>(null);
   useLayoutEffect(() => {
     const el = preRef.current, plate = ref.current;
     if (!el || !plate) return;
-    const maxW = plate.clientWidth * 0.9, maxH = plate.clientHeight * 0.86;
-    const fits = (px: number) => {
-      el.style.fontSize = `${px}px`;
-      return el.scrollWidth <= maxW && el.scrollHeight <= maxH;
-    };
-    let lo = 3, hi = Math.max(8, plate.clientHeight * 0.7);
-    for (let i = 0; i < 12; i++) {
-      const mid = (lo + hi) / 2;
-      if (fits(mid)) lo = mid; else hi = mid;
-    }
-    el.style.fontSize = `${lo}px`;
+    const BASE = 48;
+    el.style.fontSize = `${BASE}px`;
+    el.style.transform = "none";
+    const w = el.scrollWidth || 1, h = el.scrollHeight || 1;
+    const s = Math.min(
+      (plate.clientWidth * 0.9) / w,
+      (plate.clientHeight * 0.86) / h,
+      (plate.clientHeight * 0.55) / BASE, // a single short word still shouldn't fill the plate
+    );
+    el.style.transform = `scale(${s})`;
   }, [label, box]);
 
   return (
@@ -205,7 +206,7 @@ function Plaque({
       <span className="plaque-screw" style={{ right: "4%", bottom: "14%" }} />
       <pre
         ref={preRef}
-        className={`plaque-text max-h-full whitespace-pre text-center leading-[1.15] ${ghost || heldByOther ? "uppercase tracking-[0.18em]" : ""}`}
+        className={`plaque-text shrink-0 origin-center whitespace-pre text-center leading-[1.15] ${ghost || heldByOther ? "uppercase tracking-[0.18em]" : ""}`}
       >
         {label || " "}
       </pre>
