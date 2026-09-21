@@ -28,7 +28,7 @@ type Props = {
 };
 
 type View = "overview" | Side;
-const EASE = "transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,0.9,0.25,1)]";
+const EASE = "transition-transform duration-[2200ms] ease-[cubic-bezier(0.4,0.02,0.15,1)] will-change-transform";
 
 /**
  * A real photograph of a bench in this kind of area, with the plaques drawn
@@ -46,7 +46,7 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
     if (!editingSide) { setSettled(false); return; }
     setView("overview");
     setSettled(false);
-    const t = window.setTimeout(() => { setView(editingSide); setSettled(true); }, 450);
+    const t = window.setTimeout(() => { setView(editingSide); setSettled(true); }, 650);
     return () => window.clearTimeout(t);
   }, [editingSide]);
   const zoomed = editingSide !== null && settled;
