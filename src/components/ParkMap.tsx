@@ -300,12 +300,13 @@ export default function ParkMap({
           const [x, y] = centroid(a.polygon);
           const [lng, lat] = toLngLat([x, y]);
           const s = byId.get(a.id);
+          if (a.id === focusArea) return null; // the panel names it; its pins need the room
           const dim = dimOthers && a.id !== focusArea;
           return (
             <Marker key={a.id} longitude={lng} latitude={lat} anchor="center" style={{ pointerEvents: "none" }}>
-              <div className={`text-center leading-tight transition-opacity ${dim ? "opacity-40" : ""}`}>
-                <div className="text-[11px] font-semibold text-emerald-950 [text-shadow:0_0_3px_#fff,0_0_3px_#fff,0_0_6px_#fff]">{a.short}</div>
-                {s && <div className="text-[10px] text-blue-800 [text-shadow:0_0_3px_#fff,0_0_3px_#fff]">{s.sides_open} open</div>}
+              <div className={`rounded-full bg-white/90 px-2 py-0.5 text-center leading-tight shadow-sm transition-opacity ${dim ? "opacity-40" : ""}`}>
+                <div className="whitespace-nowrap text-[11px] font-semibold text-emerald-950">{a.short}</div>
+                {s && <div className="text-[10px] text-blue-800">{s.sides_open} open</div>}
               </div>
             </Marker>
           );

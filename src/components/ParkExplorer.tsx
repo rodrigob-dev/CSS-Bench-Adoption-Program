@@ -131,7 +131,7 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
             <label className="flex items-center gap-2 text-sm text-ink/70">
               <input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} /> Only benches with an open plaque
             </label>
-            <div className="grid max-h-[480px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
+            <div className="grid max-h-[480px] grid-cols-2 gap-3 overflow-y-auto p-1 pr-3 [scrollbar-gutter:stable] sm:grid-cols-3">
               {listed.filter((b) => !b.installed).map((b) => <BenchCard key={b.id} bench={b} onSelect={selectBench} />)}
               {listed.filter((b) => b.installed).map((b) => <BenchCard key={b.id} bench={b} onSelect={selectBench} />)}
             </div>

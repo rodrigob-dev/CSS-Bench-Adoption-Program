@@ -1,0 +1,20 @@
+# Adopt-A-Bench, Riverbend Park
+
+> A bench adoption service for a park: see which of 532 benches are adopted, by whom and until when, and request a plaque on one. Built as a take-home for Columbia Software Solutions, simulating the Van Cortlandt Park Alliance program (prices, term and form fields follow VCPA's).
+
+## Pages
+
+- / : the park map. Every bench is a pin (open, one of two plaques open, adopted, spot for a new bench). Click a pin for status, donor and term; "Adopt this plaque" opens the request form with the plaque held for 10 minutes.
+- /about : how the program works, prices ($3,500 existing bench, $5,500 new bench, ten-year term), FAQ.
+- /areas/{id} : one area of the park with its benches.
+- /benches/{id} : one bench, photographed, with its plaques; the request form.
+
+## How it works
+
+- The unit of adoption is a plaque position (an 8 ft bench has two, a 4 ft bench one).
+- Opening the form reserves the plaque for 10 minutes; submitting creates a request; park staff approve or reject it. Approval starts the ten-year term.
+- The database enforces one live adoption per plaque with a partial unique index; there are no accounts and no online payment.
+
+## Source
+
+- https://github.com/rodrigob-dev/CSS-Bench-Adoption-Program (README.md, DECISIONS.md)

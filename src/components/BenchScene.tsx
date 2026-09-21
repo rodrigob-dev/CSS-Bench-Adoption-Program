@@ -40,6 +40,10 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
   const single = sides.length === 1;
   const [view, setView] = useState<View>(editingSide ?? "overview");
   const zoomed = editingSide !== null;
+  // when the form is opened from outside (deep link, panel button), follow it
+  useEffect(() => {
+    if (editingSide) setView(editingSide);
+  }, [editingSide]);
 
   const anchor = (side: Side) => (single ? scene.plaques.single : scene.plaques[side]);
   const [bx0, by0, bx1, by1] = scene.bench;
@@ -49,15 +53,15 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
   const focus: [number, number] = view === "overview" ? benchCentre : anchor(view);
   const benchSpan = Math.max(bx1 - bx0, ((by1 - by0) / 100) * scene.aspect * 100 * 0.6);
   const overviewScale = Math.min(1.35, Math.max(1, 70 / benchSpan)); // frame the bench, never crop past the photo much
-  // zoom so a plaque fills roughly an eighth of the frame, whatever its size in the photo
-  const editScale = Math.min(5.5, Math.max(2.6, 13 / scene.plaqueSize[0]));
-  const sideScale = Math.min(3, Math.max(1.6, editScale * 0.6));
+  // zoom so a plaque fills about a third of the frame while editing, whatever its size in the photo
+  const editScale = Math.min(6, Math.max(2.8, 30 / scene.plaqueSize[0]));
+  const sideScale = Math.min(3.2, Math.max(1.6, editScale * 0.5));
   const camScale = zoomed ? editScale : view === "overview" ? overviewScale : sideScale;
   // never pan past the photo's edge: |t| ≤ 50·(scale − 1)
   const limit = 50 * (camScale - 1);
   const clamp = (v: number) => Math.max(-limit, Math.min(limit, v));
   const tx = clamp((50 - focus[0]) * camScale);
-  const ty = clamp((50 - focus[1] + (zoomed ? 6 : 0)) * camScale);
+  const ty = clamp((50 - focus[1]) * camScale - (zoomed ? 8 : 0)); // editing: plaque a little above centre
 
   const go = (v: View) => {
     setView(v);

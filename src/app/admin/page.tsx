@@ -7,6 +7,9 @@ import { QueueRow } from "./QueueRow";
 
 export const dynamic = "force-dynamic";
 
+/** Unlisted: no links point here and crawlers are told to stay out. */
+export const metadata = { title: "Park staff", robots: { index: false, follow: false } };
+
 /**
  * Where adoption requests go. Staff approve (the 10-year term starts) or
  * reject (the plaque reopens), and record when a new bench has been built.
