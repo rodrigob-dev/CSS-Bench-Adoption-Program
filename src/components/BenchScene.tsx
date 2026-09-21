@@ -28,8 +28,8 @@ type Props = {
 };
 
 type View = "overview" | Side;
-const EASE = "transition-transform duration-[2200ms] ease-[cubic-bezier(0.4,0.02,0.15,1)]";
-const EASE_BOX = "transition-[left,top,width,height] duration-[2200ms] ease-[cubic-bezier(0.4,0.02,0.15,1)]";
+const EASE = "transition-transform ease-[cubic-bezier(0.4,0.02,0.15,1)]";
+const EASE_BOX = "transition-[left,top,width,height] ease-[cubic-bezier(0.4,0.02,0.15,1)]";
 
 /**
  * A real photograph of a bench in this kind of area, with the plaques drawn
@@ -51,6 +51,8 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
     return () => window.clearTimeout(t);
   }, [editingSide]);
   const zoomed = editingSide !== null && settled;
+  // the glide onto the plaque when adopting is slow and cinematic; every other move is quick
+  const duration = zoomed ? "2200ms" : "1400ms";
 
   const anchor = (side: Side) => (single ? scene.plaques.single : scene.plaques[side]);
   const [bx0, by0, bx1, by1] = scene.bench;
@@ -82,7 +84,7 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
   return (
     <div className="@container relative select-none overflow-hidden rounded-2xl bg-forest-deep shadow-lg">
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: scene.aspect }}>
-        <div className={`absolute inset-0 ${EASE}`} style={{ transform: `translate(${tx}%, ${ty}%) scale(${camScale})`, transformOrigin: "50% 50%" }}>
+        <div className={`absolute inset-0 ${EASE}`} style={{ transform: `translate(${tx}%, ${ty}%) scale(${camScale})`, transformOrigin: "50% 50%", transitionDuration: duration }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={scene.src} alt="" className={`block h-full w-full object-cover ${ghostBench ? "saturate-[0.6]" : ""}`} draggable={false} />
           {ghostBench && (
@@ -103,6 +105,7 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
             data={s}
             centre={project(anchor(s.side))}
             size={projectedSize}
+            duration={duration}
             draft={editingSide === s.side ? draft : ""}
             editing={editingSide === s.side}
             dim={view !== "overview" && view !== s.side}
@@ -140,8 +143,8 @@ function Ctl({ children, onClick, active }: { children: React.ReactNode; onClick
 }
 
 function Plaque({
-  data, centre, size, draft, editing, dim, onClick,
-}: { data: SceneSide; centre: [number, number]; size: [number, number]; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
+  data, centre, size, duration, draft, editing, dim, onClick,
+}: { data: SceneSide; centre: [number, number]; size: [number, number]; duration: string; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
   const adopted = data.status === "adopted" || (data.status === "pending" && data.mine);
   const heldByOther = (data.status === "held" && !data.mine) || (data.status === "pending" && !data.mine);
   const text = adopted ? data.plaque_text ?? "" : draft;
@@ -193,6 +196,7 @@ function Plaque({
         width: `${size[0]}%`,
         height: `${size[1]}%`,
         transform: "translate(-50%, -50%)",
+        transitionDuration: duration,
       }}
     >
       <span className="plaque-screw" style={{ left: "4%", top: "14%" }} />
