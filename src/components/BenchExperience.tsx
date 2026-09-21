@@ -16,6 +16,8 @@ type Props = {
   adoptedJustNow?: string;
   /** Open the form for this plaque straight away (deep link from the map). */
   startWith?: Side;
+  /** Just look at this plaque (deep link). */
+  viewSide?: Side;
 };
 
 const plaqueName = (bench: Bench, side: Side) => (bench.sides.length === 1 ? "plaque" : side === "A" ? "left plaque" : "right plaque");
@@ -25,7 +27,7 @@ const plaqueName = (bench: Bench, side: Side) => (bench.sides.length === 1 ? "pl
  * action) before the form opens, so two people cannot fill in the same plaque
  * at once; cancelling releases it; submitting converts it into the adoption.
  */
-export function BenchExperience({ bench, areaName, price, adoptedJustNow, startWith }: Props) {
+export function BenchExperience({ bench, areaName, price, adoptedJustNow, startWith, viewSide }: Props) {
   const [editing, setEditing] = useState<Side | null>(null);
   const [holdUntil, setHoldUntil] = useState<string | null>(null); // null while editing = no hold (unmigrated db)
   const [notice, setNotice] = useState<string | null>(null);
@@ -89,9 +91,10 @@ export function BenchExperience({ bench, areaName, price, adoptedJustNow, startW
           draft={draft}
           editingSide={editing}
           ghostBench={!bench.installed}
+          initialView={viewSide}
           onPlaqueClick={beginAdoption}
           onPickSide={(s) => {
-            if (editing && s !== editing) cancel();
+            if (editing && s && s !== editing) cancel(); // going back to the overview keeps the hold; only switching plaques cancels
           }}
         />
         <p className="mt-2 text-xs text-ink/50">

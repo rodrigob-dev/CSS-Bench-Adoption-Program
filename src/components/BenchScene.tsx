@@ -23,38 +23,41 @@ type Props = {
   editingSide?: Side | null;
   /** Not-yet-installed spot: outline where the bench will go. */
   ghostBench?: boolean;
+  /** Start on a plaque instead of the whole bench (deep link). */
+  initialView?: Side;
   onPlaqueClick?: (side: Side) => void;
   onPickSide?: (side: Side | null) => void;
 };
 
 type View = "overview" | Side;
 const EASE = "transition-transform";
-const EASE_BOX = "transition-[left,top,width,height]";
 
 /**
  * A real photograph of a bench in this kind of area, with the plaques drawn
  * on its top rail. The "camera" is a CSS transform on the whole photo:
  * overview → slide to a plaque → zoom in to edit it.
  */
-export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = null, ghostBench = false, onPlaqueClick, onPickSide }: Props) {
+export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = null, ghostBench = false, initialView, onPlaqueClick, onPickSide }: Props) {
   const scene = sceneFor(areaId);
   const single = sides.length === 1;
-  const [view, setView] = useState<View>(editingSide ?? "overview");
+  const [view, setView] = useState<View>(editingSide ?? initialView ?? "overview");
   // Editing starts with a beat on the whole bench (so you see what you are
   // adopting), then the camera glides onto the plaque.
   const [settled, setSettled] = useState(false);
+  const [cinematic, setCinematic] = useState(false); // only the first glide after opening the form is slow
   useEffect(() => {
-    if (!editingSide) { setSettled(false); return; }
+    if (!editingSide) { setSettled(false); setCinematic(false); return; }
     setView("overview");
     setSettled(false);
-    const t = window.setTimeout(() => { setView(editingSide); setSettled(true); }, 650);
-    return () => window.clearTimeout(t);
+    const t1 = window.setTimeout(() => { setView(editingSide); setSettled(true); setCinematic(true); }, 650);
+    const t2 = window.setTimeout(() => setCinematic(false), 650 + 2300);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
   }, [editingSide]);
-  const zoomed = editingSide !== null && settled;
+  const zoomed = editingSide !== null && settled && view === editingSide;
   // the glide onto the plaque when adopting is slow, easing in and out; every
-  // other move is quick and starts at full speed (no wind-up), then settles
-  const duration = zoomed ? "2200ms" : "700ms";
-  const easing = zoomed ? "cubic-bezier(0.4, 0.02, 0.15, 1)" : "cubic-bezier(0.1, 0.7, 0.25, 1)";
+  // other move (slides, zooming out, coming back) is quick and starts at full speed
+  const duration = cinematic ? "2200ms" : "700ms";
+  const easing = cinematic ? "cubic-bezier(0.4, 0.02, 0.15, 1)" : "cubic-bezier(0.1, 0.7, 0.25, 1)";
 
   const anchor = (side: Side) => (single ? scene.plaques.single : scene.plaques[side]);
   const [bx0, by0, bx1, by1] = scene.bench;
@@ -73,10 +76,6 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
   const clamp = (v: number) => Math.max(-limit, Math.min(limit, v));
   const tx = clamp((50 - focus[0]) * camScale);
   const ty = clamp((50 - focus[1]) * camScale - (zoomed ? 8 : 0)); // editing: plaque a little above centre
-
-  /** Where a point of the photo (in %) lands in the frame after the camera transform. */
-  const project = ([x, y]: [number, number]): [number, number] => [50 + (x - 50) * camScale + tx, 50 + (y - 50) * camScale + ty];
-  const projectedSize: [number, number] = [scene.plaqueSize[0] * camScale, scene.plaqueSize[1] * camScale];
 
   const go = (v: View) => {
     setView(v);
@@ -99,26 +98,25 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
               </span>
             </div>
           )}
+            {/* plaques ride inside the scaled photo so they move in perfect sync with it */}
+          {sides.map((s) => (
+            <Plaque
+              key={s.side}
+              data={s}
+              centre={anchor(s.side)}
+              size={scene.plaqueSize}
+              draft={editingSide === s.side ? draft : ""}
+              editing={editingSide === s.side}
+              dim={view !== "overview" && view !== s.side}
+              onClick={() => {
+                if (s.status === "adopted" || s.status === "pending" || (s.status === "held" && !s.mine)) return;
+                if (editingSide === s.side) { setView(s.side); return; } // already adopting it: just come back, quickly
+                // otherwise no camera move here: the editing effect runs the beat + glide once the plaque is held
+                onPlaqueClick?.(s.side);
+              }}
+            />
+          ))}
         </div>
-        {/* plaques sit outside the scaled photo so their text is laid out at true size and stays sharp */}
-        {sides.map((s) => (
-          <Plaque
-            key={s.side}
-            data={s}
-            centre={project(anchor(s.side))}
-            size={projectedSize}
-            duration={duration}
-            easing={easing}
-            draft={editingSide === s.side ? draft : ""}
-            editing={editingSide === s.side}
-            dim={view !== "overview" && view !== s.side}
-            onClick={() => {
-              if (s.status === "adopted" || s.status === "pending" || (s.status === "held" && !s.mine)) return;
-              // no camera move here: the editing effect runs the beat + glide once the plaque is held
-              onPlaqueClick?.(s.side);
-            }}
-          />
-        ))}
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-3 flex items-center justify-center gap-2 text-sm">
@@ -146,8 +144,8 @@ function Ctl({ children, onClick, active }: { children: React.ReactNode; onClick
 }
 
 function Plaque({
-  data, centre, size, duration, easing, draft, editing, dim, onClick,
-}: { data: SceneSide; centre: [number, number]; size: [number, number]; duration: string; easing: string; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
+  data, centre, size, draft, editing, dim, onClick,
+}: { data: SceneSide; centre: [number, number]; size: [number, number]; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
   const adopted = data.status === "adopted" || (data.status === "pending" && data.mine);
   const heldByOther = (data.status === "held" && !data.mine) || (data.status === "pending" && !data.mine);
   const text = adopted ? data.plaque_text ?? "" : draft;
@@ -190,7 +188,7 @@ function Plaque({
       onClick={onClick}
       disabled={adopted || heldByOther}
       title={data.status === "pending" ? (data.mine ? "Your request is waiting for approval" : "Not available") : adopted ? `Adopted by ${data.donor_name}` : heldByOther ? "Not available right now" : "Adopt this plaque"}
-      className={`plaque absolute flex items-center justify-center overflow-hidden ${EASE_BOX} ${
+      className={`plaque absolute flex items-center justify-center overflow-hidden transition-[opacity,box-shadow] duration-500 ${
         adopted ? "cursor-default" : "cursor-pointer"
       } ${ghost ? "plaque-ghost" : ""} ${heldByOther || data.status === "pending" ? "plaque-held" : ""} ${dim ? "opacity-60" : "opacity-100"} ${editing ? "plaque-editing" : ""}`}
       style={{
@@ -199,8 +197,6 @@ function Plaque({
         width: `${size[0]}%`,
         height: `${size[1]}%`,
         transform: "translate(-50%, -50%)",
-        transitionDuration: duration,
-        transitionTimingFunction: easing,
       }}
     >
       <span className="plaque-screw" style={{ left: "4%", top: "14%" }} />

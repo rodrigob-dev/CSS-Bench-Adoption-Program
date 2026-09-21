@@ -6,10 +6,10 @@ import { priceFor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ adopted?: string; adopt?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ adopted?: string; adopt?: string; view?: string }> };
 
 export default async function BenchPage({ params, searchParams }: Props) {
-  const [{ id }, { adopted, adopt }] = await Promise.all([params, searchParams]);
+  const [{ id }, { adopted, adopt, view }] = await Promise.all([params, searchParams]);
   const bench = await getBench(id);
   if (!bench) notFound();
   const area = await getArea(bench.area_id);
@@ -27,6 +27,7 @@ export default async function BenchPage({ params, searchParams }: Props) {
         price={priceFor(bench)}
         adoptedJustNow={adopted}
         startWith={adopt === "A" || adopt === "B" ? adopt : undefined}
+        viewSide={view === "A" || view === "B" ? view : undefined}
       />
     </div>
   );
