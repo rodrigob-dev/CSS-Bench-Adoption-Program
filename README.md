@@ -5,7 +5,7 @@ park's 500+ benches are adopted, by whom and until when, and adopt one
 yourself. Riverbend Park is fictional — the brief simulates the service for a
 park whose benches have all been mapped, so every bench has a position.
 
-**Live:** _(URL goes here)_
+**Live:** https://css-bench-adoption-program-1.vercel.app — staff queue at /admin
 
 ## What it does
 
