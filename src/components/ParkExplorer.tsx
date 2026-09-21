@@ -68,8 +68,9 @@ export function ParkExplorer({ areas, benches, initialArea = null }: Props) {
         />
         <MapLegend compact={Boolean(focus)} />
         {focus && (
-          <button type="button" onClick={() => selectArea(null)} className="absolute left-3 top-3 z-10 rounded-full bg-white/95 px-3 py-1.5 text-sm font-semibold text-forest-deep shadow hover:bg-white">
-            Whole park
+          <button type="button" onClick={() => selectArea(null)} className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-white/95 py-1.5 pl-2.5 pr-3.5 text-sm font-semibold text-forest-deep shadow hover:bg-white">
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12.5 4.5 7 10l5.5 5.5" /></svg>
+            Back to whole park
           </button>
         )}
       </div>
@@ -148,7 +149,10 @@ function BenchPanel({ bench, areaName, onBack, onAdopt }: { bench: Bench; areaNa
   const name = (side: Side) => (single ? "Plaque" : side === "A" ? "Left plaque" : "Right plaque");
   return (
     <div className="space-y-3 rounded-2xl bg-white p-4 shadow-lg">
-      <button type="button" onClick={onBack} className="text-xs text-ink/60 hover:underline">Back to {areaName}</button>
+      <button type="button" onClick={onBack} className="flex items-center gap-1 text-xs text-ink/60 hover:underline">
+        <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12.5 4.5 7 10l5.5 5.5" /></svg>
+        Back to {areaName}
+      </button>
       <div className="flex items-center gap-2">
         <BenchGlyph className="text-forest" />
         <h2 className="font-display text-2xl font-extrabold uppercase tracking-wide text-forest">{bench.id}</h2>
