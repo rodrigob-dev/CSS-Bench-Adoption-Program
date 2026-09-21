@@ -10,7 +10,7 @@ VCPA's FAQ says an 8 ft bench has two independently adoptable sides and a 4 ft
 bench has one. So "adopted" is not a boolean on a bench: an 8 ft bench can be
 open, half adopted or fully adopted. Every adoption row carries `(bench_id,
 side)`, and the UI derives a bench's colour from its sides. Alternative: treat
-the bench as the unit and ignore sides — simpler, but wrong per the FAQ, and
+the bench as the unit and ignore sides, simpler, but wrong per the FAQ, and
 the park would hit it on the first 8 ft bench with two donors.
 
 ## 2. Adoptions are their own table, never a flag on the bench
@@ -18,7 +18,7 @@ the park would hit it on the first 8 ft bench with two donors.
 `benches` describes the physical object; `adoptions` records events. Rows are
 never deleted or overwritten, so a bench keeps its history (the seed includes
 already-expired adoptions from 15-20 years ago on ~8% of sides). Alternative:
-`adopted_by` / `adopted_until` columns on `benches` — loses history the moment
+`adopted_by` / `adopted_until` columns on `benches`, loses history the moment
 a term ends and someone else adopts.
 
 ## 3. Concurrency is solved by the database, not by the app
@@ -51,11 +51,11 @@ introduce a bug class where the flag disagrees with the rows.
 
 A row keeps `status = 'active'` after its term lapses. On read, the view
 reports a lapsed side as `open`. On write, `adopt_bench()` first updates any
-lapsed active row on that side to `expired`, then inserts — both in one
+lapsed active row on that side to `expired`, then inserts, both in one
 transaction, so the partial index never blocks a legitimate re-adoption and
 no scheduled job is needed. The seed deliberately includes ~40 active rows
 older than 10 years so this path is exercised out of the box. Alternative: a
-nightly job that expires rows — more moving parts, and the site would show
+nightly job that expires rows, more moving parts, and the site would show
 stale status between runs.
 
 ## 6. `term_years` is a column, defaulting to 10
@@ -79,7 +79,7 @@ locations along the edge of one area. Those are modelled as bench rows with
 `installed = false` (`GL-SLOT-01..12`, on the Great Lawn edge), drawn as
 dashed pins. Adopting one produces an `install_and_adopt` adoption at $5,500
 and the bench stays `installed = false` until the park installs it (a flag
-flip on their side; installation takes ~3 months per the FAQ). While not installed, only side A is offered — the
+flip on their side; installation takes ~3 months per the FAQ). While not installed, only side A is offered, the
 install donor takes it; side B opens once the bench physically exists.
 
 ## 9. The park is fictional, and every bench has a position
@@ -144,7 +144,7 @@ form mirrors it with a live line counter.
 
 ## 15. Scope cut
 
-- No admin UI (marking a slot as installed, cancelling an adoption) — those
+- No admin UI (marking a slot as installed, cancelling an adoption), those
   are a `status`/`installed` update park staff would do; the schema supports
   them, the UI does not expose them.
 - No search/filter beyond area.
@@ -155,11 +155,11 @@ form mirrors it with a live line counter.
 The question was *when* to secure a plaque so two people cannot double-book
 it. Three candidate moments:
 
-- **On bench click** — too early. Browsing a bench should not block both of
+- **On bench click**, too early. Browsing a bench should not block both of
   its plaques for everyone else.
-- **On submit only** — correct but unkind. Two people can spend ten minutes
+- **On submit only**, correct but unkind. Two people can spend ten minutes
   each writing a plaque and one of them loses at the last click.
-- **On plaque click** (the form opens) — the choice. That is the moment intent
+- **On plaque click** (the form opens), the choice. That is the moment intent
   becomes explicit.
 
 So opening the form takes a **10-minute hold**: a row in `adoptions` with
@@ -201,7 +201,7 @@ Who does what:
   fills in VCPA's form, submits. The row becomes `pending`: the plaque stays
   taken, the donor's text shows on it marked as pending, and nothing else
   happens until staff act.
-- **Park staff** (`/admin`, gated by a shared `ADMIN_KEY` — there are no
+- **Park staff** (`/admin`, gated by a shared `ADMIN_KEY`, there are no
   accounts, and a key in an httpOnly cookie is enough for a two-person
   office): see every live request, newest first. **Approve** flips it to
   `active` and stamps `adopted_at`, so the 10-year term starts at approval,
@@ -235,7 +235,7 @@ of it:
   the form already open and the plaque already held. (2 clicks)
 
 Things removed for this: the marketing landing (moved to /about), the demo
-wallet (an extra "add funds" step for no reason — payment is confirmed by
+wallet (an extra "add funds" step for no reason, payment is confirmed by
 staff at review anyway), the fly-then-navigate delays, and half the copy.
 The form asks for what a request needs (plaque text, name, email, the
 timeline acknowledgement); honoree and notes sit under "More options".

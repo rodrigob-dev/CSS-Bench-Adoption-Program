@@ -1,11 +1,11 @@
-# Adopt a Bench — Riverbend Park
+# Adopt a Bench, Riverbend Park
 
 A single source of truth for a park bench adoption program: see which of the
 park's 500+ benches are adopted, by whom and until when, and adopt one
-yourself. Riverbend Park is fictional — the brief simulates the service for a
+yourself. Riverbend Park is fictional, the brief simulates the service for a
 park whose benches have all been mapped, so every bench has a position.
 
-**Live:** https://css-bench-adoption-program-1.vercel.app — staff queue at /admin
+**Live:** https://css-bench-adoption-program-1.vercel.app, staff queue at /admin
 
 ## What it does
 
@@ -14,7 +14,7 @@ park whose benches have all been mapped, so every bench has a position.
   spot for a new bench. Hover shows the donor; click shows status, donor and
   term in the side panel. Search jumps to a bench id or an area.
 - **Bench page.** Each adoptable *side* shows the donor, the plaque text, the
-  adoption date and when the term ends — or an adoption form if it is open.
+  adoption date and when the term ends, or an adoption form if it is open.
 - **Adopt in two clicks.** "Adopt this plaque" in the panel opens the bench
   page with the form open and the plaque held for you for 10 minutes. The
   form is VCPA's (plaque text up to 7 lines / 300 characters, name, email,
@@ -85,7 +85,7 @@ npm run race-test
 
 ## Assumptions and design decisions
 
-The short version — each point is expanded in [DECISIONS.md](DECISIONS.md):
+The short version, each point is expanded in [DECISIONS.md](DECISIONS.md):
 
 1. **A bench side, not a bench, is what gets adopted.** 8 ft benches have two
    sides (VCPA FAQ), so a bench can be open, half adopted or full.
@@ -100,7 +100,7 @@ The short version — each point is expanded in [DECISIONS.md](DECISIONS.md):
 3b. **A plaque is reserved when its form opens, for 10 minutes.** Clicking a
    plaque takes a hold (same table, `status = 'held'`, per-browser token);
    submitting converts it, cancelling releases it, silence lets it lapse.
-   Clicking the bench reserves nothing — that is still browsing.
+   Clicking the bench reserves nothing, that is still browsing.
 3c. **Submitting creates a request, not an adoption.** It sits in a staff
    queue (`/admin`) as `pending`, still holding the plaque; approval starts
    the 10-year term, rejection reopens the plaque. The public demo seeds no
