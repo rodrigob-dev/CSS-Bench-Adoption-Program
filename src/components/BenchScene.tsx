@@ -139,15 +139,6 @@ function Ctl({ children, onClick, active }: { children: React.ReactNode; onClick
   );
 }
 
-/** Font size that fits the text inside the plate: short dedications read large, seven lines read small. */
-function fitFontSize(text: string, boxW: number, boxH: number): number {
-  const lines = text.split("\n");
-  const longest = Math.max(1, ...lines.map((l) => l.length));
-  const byHeight = (boxH * 0.82) / (lines.length * 1.18);
-  const byWidth = (boxW * 0.88) / (longest * 0.66);
-  return Math.max(3, Math.min(byHeight, byWidth, boxH * 0.42));
-}
-
 function Plaque({
   data, centre, size, draft, editing, dim, onClick,
 }: { data: SceneSide; centre: [number, number]; size: [number, number]; draft: string; editing: boolean; dim: boolean; onClick: () => void }) {
@@ -166,23 +157,25 @@ function Plaque({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const fontSize = fitFontSize(label || " ", box[0], box[1]);
-  // The estimate above is refined against the real glyphs: shrink until the
-  // text neither wraps past the plate's width nor overflows its height.
+  // Size the type to the plate by measuring the real glyphs: the largest
+  // font size at which no line spills past the plate and all lines fit its
+  // height. A two-line dedication reads large, seven lines read small.
   const preRef = useRef<HTMLPreElement>(null);
   useLayoutEffect(() => {
     const el = preRef.current, plate = ref.current;
     if (!el || !plate) return;
-    let size = fontSize;
-    el.style.fontSize = `${size}px`;
-    for (let i = 0; i < 24 && size > 2.5; i++) {
-      const fitsH = el.scrollHeight <= plate.clientHeight * 0.9;
-      const fitsW = el.scrollWidth <= plate.clientWidth * 0.94;
-      if (fitsH && fitsW) break;
-      size *= 0.93;
-      el.style.fontSize = `${size}px`;
+    const maxW = plate.clientWidth * 0.9, maxH = plate.clientHeight * 0.86;
+    const fits = (px: number) => {
+      el.style.fontSize = `${px}px`;
+      return el.scrollWidth <= maxW && el.scrollHeight <= maxH;
+    };
+    let lo = 3, hi = Math.max(8, plate.clientHeight * 0.7);
+    for (let i = 0; i < 12; i++) {
+      const mid = (lo + hi) / 2;
+      if (fits(mid)) lo = mid; else hi = mid;
     }
-  }, [fontSize, label, box]);
+    el.style.fontSize = `${lo}px`;
+  }, [label, box]);
 
   return (
     <button
@@ -208,8 +201,7 @@ function Plaque({
       <span className="plaque-screw" style={{ right: "4%", bottom: "14%" }} />
       <pre
         ref={preRef}
-        className={`plaque-text max-h-full whitespace-pre-wrap break-words px-[6%] text-center leading-[1.15] ${ghost || heldByOther ? "uppercase tracking-[0.18em]" : ""}`}
-        style={{ fontSize: `${fontSize}px` }}
+        className={`plaque-text max-h-full whitespace-pre text-center leading-[1.15] ${ghost || heldByOther ? "uppercase tracking-[0.18em]" : ""}`}
       >
         {label || " "}
       </pre>
