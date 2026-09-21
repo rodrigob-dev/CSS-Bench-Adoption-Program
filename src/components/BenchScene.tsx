@@ -114,7 +114,7 @@ export function BenchScene({ benchId, sides, areaId, draft = "", editingSide = n
             dim={view !== "overview" && view !== s.side}
             onClick={() => {
               if (s.status === "adopted" || s.status === "pending" || (s.status === "held" && !s.mine)) return;
-              go(s.side);
+              // no camera move here: the editing effect runs the beat + glide once the plaque is held
               onPlaqueClick?.(s.side);
             }}
           />
