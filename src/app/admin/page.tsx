@@ -26,7 +26,6 @@ export default async function AdminPage() {
   const queue = await getQueue();
   const areaName = Object.fromEntries(PARK.areas.map((a) => [a.id, a.name]));
   const pending = queue.filter((q) => q.status === "pending");
-  const held = queue.filter((q) => q.status === "held");
   const active = queue.filter((q) => q.status === "active");
 
   return (
@@ -35,7 +34,7 @@ export default async function AdminPage() {
         <div>
           <h1 className="font-display text-4xl font-extrabold uppercase tracking-tight text-forest">Adoption requests</h1>
           <p className="text-ink/70">
-            {pending.length} waiting for review, {held.length} forms open right now, {active.length} approved.
+            {pending.length} waiting for review, {active.length} approved.
           </p>
         </div>
         <form action={adminLogout}>
@@ -45,9 +44,6 @@ export default async function AdminPage() {
 
       <Section title="Waiting for review" empty="Nothing to review. New submissions appear here the moment a donor sends the form.">
         {pending.map((q) => <QueueRow key={q.id} item={q} areaName={areaName[q.area_id]} />)}
-      </Section>
-      <Section title="Forms open right now" empty="Nobody is filling in a form at the moment.">
-        {held.map((q) => <QueueRow key={q.id} item={q} areaName={areaName[q.area_id]} />)}
       </Section>
       <Section title="Approved" empty="No approved adoptions yet.">
         {active.map((q) => <QueueRow key={q.id} item={q} areaName={areaName[q.area_id]} />)}

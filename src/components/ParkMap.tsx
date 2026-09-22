@@ -87,6 +87,34 @@ function makeIcons(map: MapLibreMap) {
   }
 }
 
+/**
+ * Replaces MapLibre's keyboard handler (`keyboard={false}` below): same keys,
+ * but Shift+arrows turn and tilt the way the key points; MapLibre's defaults
+ * run the other way round.
+ */
+function handleKey(map: MapLibreMap, e: KeyboardEvent) {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const PAN = 100, TURN = 15, TILT = 10;
+  let x = 0, y = 0, bearing = 0, pitch = 0, zoom = 0;
+  switch (e.key) {
+    case "ArrowLeft": if (e.shiftKey) bearing = 1; else x = -1; break;
+    case "ArrowRight": if (e.shiftKey) bearing = -1; else x = 1; break;
+    case "ArrowUp": if (e.shiftKey) pitch = -1; else y = -1; break;
+    case "ArrowDown": if (e.shiftKey) pitch = 1; else y = 1; break;
+    case "+": case "=": zoom = 1; break;
+    case "-": case "_": zoom = -1; break;
+    default: return;
+  }
+  e.preventDefault();
+  map.easeTo({
+    duration: 300,
+    zoom: map.getZoom() + zoom * (e.shiftKey ? 2 : 1),
+    bearing: map.getBearing() + bearing * TURN,
+    pitch: map.getPitch() + pitch * TILT,
+    offset: [-x * PAN, -y * PAN],
+  });
+}
+
 export default function ParkMap({
   benches, areas, focusArea = null, focusBench, hoveredArea = null,
   onHoverArea, onSelectArea, onSelectBench, areasClickable = false,
@@ -160,6 +188,8 @@ export default function ParkMap({
       setDebug((d) => [...d, `icons:${(err as Error).message}`]);
     }
     if (process.env.NODE_ENV !== "production") (window as unknown as { __parkMap?: MapLibreMap }).__parkMap = e.target;
+    const map = e.target;
+    map.getCanvas().addEventListener("keydown", (ev) => handleKey(map, ev));
     setReady(true);
   }, []);
 
@@ -203,6 +233,7 @@ export default function ParkMap({
       minZoom={13.5}
       maxZoom={19.5}
       attributionControl={false}
+      keyboard={false}
       interactiveLayerIds={ready ? ["benches", ...(areasClickable ? ["lawns"] : [])] : []}
       onLoad={onLoad}
       onError={(e) => setDebug((d) => [...d, `error:${e.error?.message ?? String(e)}`])}

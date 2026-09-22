@@ -16,11 +16,10 @@ export default async function BenchPage({ params, searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-4 px-4 py-6">
-      <nav className="text-sm text-emerald-900/60">
-        <Link href="/" className="hover:underline">Park map</Link> /{" "}
-        <Link href={`/areas/${bench.area_id}`} className="hover:underline">{area?.name ?? bench.area_id}</Link> /{" "}
-        <span className="font-mono">{bench.id}</span>
-      </nav>
+      <Link href={`/areas/${bench.area_id}`} className="inline-flex items-center gap-1.5 rounded-full bg-white/95 py-1.5 pl-2.5 pr-3.5 text-sm font-semibold text-forest-deep shadow hover:bg-white">
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12.5 4.5 7 10l5.5 5.5" /></svg>
+        Back to {area?.name ?? bench.area_id}
+      </Link>
       <BenchExperience
         bench={bench}
         areaName={area?.name ?? bench.area_id}
